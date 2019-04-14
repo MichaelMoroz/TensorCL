@@ -1,5 +1,6 @@
 #pragma once
-
+#include <SFML_plot.h>
+#include <CLFunction.h>
 #include <iomanip>
 
 using namespace std;

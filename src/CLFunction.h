@@ -1,6 +1,5 @@
  #pragma once
-
-#include<Utilities.h>
+#include<OpenCL.h>
 
 
 //This class wraps the OpenCL kernel function computation

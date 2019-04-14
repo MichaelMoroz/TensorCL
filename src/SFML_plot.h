@@ -2,8 +2,12 @@
 #include <iostream>
 #include <omp.h>
 #include <iomanip>
-using namespace sf;
+#include <string>
+#include <sstream>
+#include <SFML/Graphics.hpp>
 
+using namespace sf;
+using namespace std;
 
 template < typename T > std::string num2str(const T& n)
 {

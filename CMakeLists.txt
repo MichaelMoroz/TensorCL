@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project (NeuralNetworkCLEngine)
+project (NeuralNetworkCL)
 
 set(SFML_DIR C:/Libraries/SFML-2.5.1/lib/cmake/SFML)
 set(SFML_LIB_DIR C:/Libraries/SFML-2.5.1/lib)
@@ -28,18 +28,18 @@ target_include_directories(NeuralNetworkCLSources PUBLIC
 
 
 if(WIN32)
-  add_executable(NeuralNetworkCLEngine WIN32 src/Main.cpp)
+  add_executable(NeuralNetworkCL WIN32 src/Main.cpp)
 else()
-  add_executable(NeuralNetworkCLEngine src/Main.cpp)
+  add_executable(NeuralNetworkCL src/Main.cpp)
 endif()
 
-add_custom_command(TARGET NeuralNetworkCLEngine PRE_BUILD
+add_custom_command(TARGET NeuralNetworkCL PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:NeuralNetworkCLEngine>)
+                       ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:NeuralNetworkCL>)
 
 
-target_compile_definitions(NeuralNetworkCLEngine PRIVATE SFML_STATIC)
-target_link_libraries(NeuralNetworkCLEngine
+target_compile_definitions(NeuralNetworkCL PRIVATE SFML_STATIC)
+target_link_libraries(NeuralNetworkCL
   NeuralNetworkCLSources
   sfml-system
   sfml-window

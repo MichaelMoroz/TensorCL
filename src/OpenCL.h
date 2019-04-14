@@ -21,7 +21,6 @@
 using namespace cl;
 using namespace std;
 
-
 template<class gen_int> string getOpenCLError(gen_int error)
 {
 	cl_int ERR = error;
@@ -106,6 +105,13 @@ template < typename T > std::string num2str(const T& n)
 	std::ostringstream stm;
 	stm << n;
 	return stm.str();
+}
+
+
+string Path(const string& str)
+{
+	std::size_t found = str.find_last_of("/\\");
+	return str.substr(0, found);
 }
 
 
