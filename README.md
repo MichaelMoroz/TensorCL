@@ -1,10 +1,8 @@
 # NeuralNetworkCL
-An OpenCL neural network with a tensor library and automaic differentiation
-It uses OpenCL version 1.2
-
+An OpenCL neural network with a tensor library and automaic differentiation.
 
 ## System Dependencies
-* OpenCL
+* OpenCL 1.2
 * OpenGL
 * [AntTweakBar](http://anttweakbar.sourceforge.net/doc/)
 * [SFML 2.5.1](https://www.sfml-dev.org)
