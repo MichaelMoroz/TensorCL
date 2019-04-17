@@ -39,7 +39,27 @@ public:
 		local = NDRange(local_x, local_y);
 	}
 
+	void SetArg(int i, float A)
+	{
+		cl_int arg_error = kernel.setArg(i, A);
+		if (arg_error != CL_SUCCESS)
+		{
+			string err = "OpenCL setArg " + num2str(i) + " error: " + getOpenCLError(arg_error);
+			ERROR_MSG(err.c_str());
+		}
+	}
+
 	void SetArg(int i, cl::Buffer &A)
+	{
+		cl_int arg_error = kernel.setArg(i, A);
+		if (arg_error != CL_SUCCESS)
+		{
+			string err = "OpenCL setArg " + num2str(i) + " error: " + getOpenCLError(arg_error);
+			ERROR_MSG(err.c_str());
+		}
+	}
+
+	void SetArg(int i, cl_mem &A)
 	{
 		cl_int arg_error = kernel.setArg(i, A);
 		if (arg_error != CL_SUCCESS)

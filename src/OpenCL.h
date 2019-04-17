@@ -11,6 +11,7 @@
 #include <ctime>
 #include <vector>
 #include <iostream>
+
 #ifdef _WIN32
 #include <windows.h>
 #define ERROR_MSG(x) MessageBox(nullptr, TEXT(x), TEXT("OpenCL Error!"), MB_OK);

@@ -6,6 +6,29 @@
 
 using namespace std;
 
+#define MAX_DIM 8
+
+#pragma pack(push, r1, 1)
+typedef struct
+{
+	cl_int size[MAX_DIM] = {1};
+	cl_int rank = 1;
+	cl_int length = 1;
+} cl_tensor;
+#pragma pack(pop, r1)
+
+#pragma pack(push, r1, 1)
+typedef struct
+{
+	cl_int index[MAX_DIM] = { 1 };
+} cl_index;
+#pragma pack(pop, r1)
+
+bool AreTensorsEqual(cl_tensor x, cl_tensor y);
+bool AreTensorsCompatible(cl_tensor x, cl_tensor y);
+cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
+
+int GetIndex(cl_index id, cl_tensor param);
 
 class Tensor
 {
@@ -14,13 +37,23 @@ public:
 	Tensor(int x, bool temp); //vector
 	Tensor(int x, int y, bool temp); //matrix
 	Tensor(int x, int y, int z, bool temp); //3d matrix
+	Tensor(int x, int y, int z, int w, bool temp); //4d matrix
+	Tensor(cl_tensor p, bool temp); //4d matrix
 
 	Tensor& operator=(Tensor &X);
+
+	Tensor(Tensor & X);
 
 	Tensor operator+(Tensor &X);
 	Tensor operator-(Tensor &X);
 	Tensor operator*(Tensor &X);
 	Tensor operator/(Tensor &X);
+
+	Tensor operator+(float x);
+	Tensor operator-(float x);
+	Tensor operator*(float x);
+	Tensor operator/(float x);
+
 	Tensor dot(Tensor &X); //dot product, last dimension of this and second to last dimension of X
 
 	bool isTemporary();
@@ -31,21 +64,18 @@ public:
 private:
 	void init_data();
 	void TensorUseOpenCL(OpenCL* cl);
+	Tensor MAD(float a, float b); //multiplication and addition
 
 	bool temporary;
-	vector<int> size;
-	int rank, length;
+	cl_tensor param;
 	
 	//OpenCL stuff
 	cl_mem data;
 
 	//this stuff is the same for all tensors
 	static OpenCL *CL;
-	static CLFunction add, mul, dot;
+	static CLFunction add, mul, mad, m_dot; //tensor addition with coeff, tensor per element mul, tensor multiplied by a number, last dimesion dot product
 };
-
-
-void InitOpenCL();
 
 class CLMatrix
 {
