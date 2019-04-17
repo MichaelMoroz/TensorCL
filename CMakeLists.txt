@@ -26,13 +26,8 @@ target_include_directories(NeuralNetworkCLSources PUBLIC
   ${ANTTWEAKBAR_DIR}/include
 )
 
-
-if(WIN32)
-  add_executable(NeuralNetworkCL WIN32 src/Main.cpp)
-else()
-  add_executable(NeuralNetworkCL src/Main.cpp)
-endif()
-
+add_executable(NeuralNetworkCL src/Main.cpp)
+  
 add_custom_command(TARGET NeuralNetworkCL PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:NeuralNetworkCL>)

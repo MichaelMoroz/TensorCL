@@ -1,9 +1,51 @@
 #pragma once
 #include <SFML_plot.h>
 #include <CLFunction.h>
+#include <vector>
 #include <iomanip>
 
 using namespace std;
+
+
+class Tensor
+{
+public:
+	Tensor(int r, vector<int> s, bool temp); //General tensor init
+	Tensor(int x, bool temp); //vector
+	Tensor(int x, int y, bool temp); //matrix
+	Tensor(int x, int y, int z, bool temp); //3d matrix
+
+	Tensor& operator=(Tensor &X);
+
+	Tensor operator+(Tensor &X);
+	Tensor operator-(Tensor &X);
+	Tensor operator*(Tensor &X);
+	Tensor operator/(Tensor &X);
+	Tensor dot(Tensor &X); //dot product, last dimension of this and second to last dimension of X
+
+	bool isTemporary();
+	void release();
+
+	~Tensor();
+
+private:
+	void init_data();
+	void TensorUseOpenCL(OpenCL* cl);
+
+	bool temporary;
+	vector<int> size;
+	int rank, length;
+	
+	//OpenCL stuff
+	cl_mem data;
+
+	//this stuff is the same for all tensors
+	static OpenCL *CL;
+	static CLFunction add, mul, dot;
+};
+
+
+void InitOpenCL();
 
 class CLMatrix
 {
@@ -120,7 +162,7 @@ public:
 		for (int i = 0; i < M; i++)
 		{
 			A[i] = new float[N];
-			for (int j = 0; j < N; j++)
+			for (int j = 0; j < N; j++)                               
 			{
 				A[i][j] = B[j*M + i];
 			}
