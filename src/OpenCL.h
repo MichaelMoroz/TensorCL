@@ -100,21 +100,6 @@ template<class gen_int> string getOpenCLError(gen_int error)
 	}
 }
 
-//This class wraps all the OpenCL loading, GLCL interop and code compilation
-template < typename T > std::string num2str(const T& n)
-{
-	std::ostringstream stm;
-	stm << n;
-	return stm.str();
-}
-
-
-string Path(const string& str)
-{
-	std::size_t found = str.find_last_of("/\\");
-	return str.substr(0, found);
-}
-
 
 class OpenCL
 {
@@ -276,6 +261,11 @@ public:
 		queue = CommandQueue(default_context, default_device);
 	}
 
+	string Path(const string& str)
+	{
+		std::size_t found = str.find_last_of("/\\");
+		return str.substr(0, found);
+	}
 
 	OpenCL()
 	{

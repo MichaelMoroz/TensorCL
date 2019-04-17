@@ -6,6 +6,9 @@
 
 using namespace std;
 
+extern OpenCL *CL;
+extern CLFunction add, mul, mad, m_dot; //tensor addition with coeff, tensor per element mul, tensor multiplied by a number, last dimesion dot product
+
 #define MAX_DIM 8
 #define TS 8
 
@@ -30,16 +33,17 @@ bool AreTensorsCompatible(cl_tensor x, cl_tensor y);
 cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 
 int GetIndex(cl_index id, cl_tensor param);
+void TensorUseOpenCL(OpenCL* cl);
 
 class TensorCL
 {
 public:
-	TensorCL(int r, vector<int> s, bool temp, OpenCL *cl); //General tensor init
-	TensorCL(int x, bool temp, OpenCL *cl); //vector
-	TensorCL(int x, int y, bool temp, OpenCL *cl); //matrix
-	TensorCL(int x, int y, int z, bool temp, OpenCL *cl); //3d matrix
-	TensorCL(int x, int y, int z, int w, bool temp, OpenCL *cl); //4d matrix
-	TensorCL(cl_tensor p, bool temp, OpenCL *cl);
+	TensorCL(int r, vector<int> s, bool temp = false); //General tensor init
+	TensorCL(int x, bool temp = false); //vector
+	TensorCL(int x, int y, bool temp = false); //matrix
+	TensorCL(int x, int y, int z, bool temp = false); //3d matrix
+	TensorCL(int x, int y, int z, int w, bool temp = false); //4d matrix
+	TensorCL(cl_tensor p, bool temp = false);
 	TensorCL(TensorCL & X);
 
 	TensorCL& operator=(TensorCL &X);
@@ -63,7 +67,6 @@ public:
 
 private:
 	void init_data();
-	void TensorUseOpenCL(OpenCL* cl);
 	TensorCL MAD(float a, float b); //multiplication and addition
 
 	bool temporary;
@@ -71,12 +74,9 @@ private:
 	
 	//OpenCL stuff
 	cl_mem data;
-
-	//this stuff is the same for all tensors
-	static OpenCL *CL;
-	static CLFunction add, mul, mad, m_dot; //tensor addition with coeff, tensor per element mul, tensor multiplied by a number, last dimesion dot product
 };
 
+/*
 class CLMatrix
 {
 public:
@@ -332,8 +332,6 @@ void print_matrix_column(CLMatrix &A, int C)
 	}
 }
 
-
-const int TS = 8;
 cl::NDRange local(TS, TS);
 
 //use minimal possible global range for the specified local range
@@ -617,3 +615,4 @@ void RandomColumnMixer(CLMatrix& A, int S, int sd)
 	}
 	A.CL->queue.finish();
 }
+*/

@@ -1,5 +1,8 @@
 #include "CL_TENSOR.h"
 
+OpenCL *CL;
+CLFunction add, mul, mad, m_dot;
+
 bool TensorCL::isTemporary()
 {
 	return temporary;
@@ -26,57 +29,46 @@ void TensorCL::init_data()
 		param.length *= param.size[i];
 	}
 	cl_int status;
-	cl_mem data = clCreateBuffer(CL->default_context(), CL_MEM_READ_WRITE, param.length * sizeof(float), 0, &status);
+	data = clCreateBuffer(CL->default_context(), CL_MEM_READ_WRITE, param.length * sizeof(float), 0, &status);
+	if (status != CL_SUCCESS)
+	{
+		string err = "OpenCL error: " + getOpenCLError(status);
+		ERROR_MSG(err.c_str());
+	}
 }
 
-TensorCL::TensorCL(int r, vector<int> s, bool temp = false, OpenCL *cl = NULL) : temporary(temp)
+TensorCL::TensorCL(int r, vector<int> s, bool temp) : temporary(temp)
 {
 	param.rank = r;
 	std::copy(s.begin(), s.end(), param.size);
 	init_data();
-	if (cl != NULL)
-	{
-		TensorUseOpenCL(cl);
-	}
 }
 
-TensorCL::TensorCL(int x, bool temp = false, OpenCL *cl = NULL) : temporary(temp)
+TensorCL::TensorCL(int x, bool temp) : temporary(temp)
 {
 	param.size[0] = x;
 	param.rank = 2;
 	init_data();
-	if (cl != NULL)
-	{
-		TensorUseOpenCL(cl);
-	}
 }
 
-TensorCL::TensorCL(int x, int y, bool temp = false, OpenCL *cl = NULL) :  temporary(temp)
+TensorCL::TensorCL(int x, int y, bool temp) :  temporary(temp)
 {
 	param.size[0] = x;
 	param.size[1] = y;
 	param.rank = 2;
 	init_data();
-	if (cl != NULL)
-	{
-		TensorUseOpenCL(cl);
-	}
 }
 
-TensorCL::TensorCL(int x, int y, int z, bool temp = false, OpenCL *cl = NULL) :  temporary(temp)
+TensorCL::TensorCL(int x, int y, int z, bool temp) :  temporary(temp)
 {
 	param.size[0] = x;
 	param.size[1] = y;
 	param.size[2] = z;
 	param.rank = 3;
 	init_data();
-	if (cl != NULL)
-	{
-		TensorUseOpenCL(cl);
-	}
 }
 
-TensorCL::TensorCL(int x, int y, int z, int w, bool temp = false, OpenCL *cl = NULL) : temporary(temp)
+TensorCL::TensorCL(int x, int y, int z, int w, bool temp) : temporary(temp)
 {
 	param.size[0] = x;
 	param.size[1] = y;
@@ -84,19 +76,11 @@ TensorCL::TensorCL(int x, int y, int z, int w, bool temp = false, OpenCL *cl = N
 	param.size[3] = w;
 	param.rank = 4;
 	init_data();
-	if (cl != NULL)
-	{
-		TensorUseOpenCL(cl);
-	}
 }
 
-TensorCL::TensorCL(cl_tensor p, bool temp, OpenCL *cl = NULL) : temporary(temp), param(p)
+TensorCL::TensorCL(cl_tensor p, bool temp) : temporary(temp), param(p)
 {
 	init_data();
-	if (cl != NULL)
-	{
-		TensorUseOpenCL(cl);
-	}
 }
 
 TensorCL& TensorCL::operator=(TensorCL & X)
@@ -288,13 +272,13 @@ TensorCL TensorCL::dot(TensorCL & X)
 	return *this;
 }
 
-void TensorCL::TensorUseOpenCL(OpenCL *cl)
+void TensorUseOpenCL(OpenCL *cl)
 {
 	CL = cl;
-	add.Initialize("tensor_add", CL, CL->group_size[0], 1, param.length, 1);
-	mul.Initialize("tensor_mul", CL, CL->group_size[0], 1, param.length, 1);
-	mad.Initialize("tensor_mad", CL, CL->group_size[0], 1, param.length, 1);
-	m_dot.Initialize("tensor_dot_product", CL, TS, TS, param.size[param.rank-1-1], 1);
+	add.Initialize("tensor_add", CL, CL->group_size[0], 1, 1, 1);
+	mul.Initialize("tensor_mul", CL, CL->group_size[0], 1, 1, 1);
+	mad.Initialize("tensor_mad", CL, CL->group_size[0], 1, 1, 1);
+	m_dot.Initialize("tensor_dot_product", CL, TS, TS, 1, 1);
 }
 
 TensorCL TensorCL::MAD(float a, float b)
