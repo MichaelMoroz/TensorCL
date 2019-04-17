@@ -1,5 +1,5 @@
 # NeuralNetworkCL
-An OpenCL neural network with a tensor library and automaic differentiation.
+An OpenCL neural network with a tensor library and automatic differentiation.
 
 ## System Dependencies
 * OpenCL 1.2
