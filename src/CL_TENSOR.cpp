@@ -1,16 +1,16 @@
 #include "CL_TENSOR.h"
 
-bool Tensor::isTemporary()
+bool TensorCL::isTemporary()
 {
 	return temporary;
 }
 
-void Tensor::release()
+void TensorCL::release()
 {
 	clReleaseMemObject(data);
 }
 
-Tensor::~Tensor()
+TensorCL::~TensorCL()
 {
 	if (!temporary)
 	{
@@ -18,7 +18,7 @@ Tensor::~Tensor()
 	}
 }
 
-void Tensor::init_data()
+void TensorCL::init_data()
 {
 	param.length = 1;
 	for (int i = 0; i < param.rank; i++)
@@ -29,38 +29,54 @@ void Tensor::init_data()
 	cl_mem data = clCreateBuffer(CL->default_context(), CL_MEM_READ_WRITE, param.length * sizeof(float), 0, &status);
 }
 
-Tensor::Tensor(int r, vector<int> s, bool temp = false) : temporary(temp)
+TensorCL::TensorCL(int r, vector<int> s, bool temp = false, OpenCL *cl = NULL) : temporary(temp)
 {
 	param.rank = r;
 	std::copy(s.begin(), s.end(), param.size);
 	init_data();
+	if (cl != NULL)
+	{
+		TensorUseOpenCL(cl);
+	}
 }
 
-Tensor::Tensor(int x, bool temp = false) : temporary(temp)
+TensorCL::TensorCL(int x, bool temp = false, OpenCL *cl = NULL) : temporary(temp)
 {
 	param.size[0] = x;
 	param.rank = 2;
 	init_data();
+	if (cl != NULL)
+	{
+		TensorUseOpenCL(cl);
+	}
 }
 
-Tensor::Tensor(int x, int y, bool temp = false) :  temporary(temp)
+TensorCL::TensorCL(int x, int y, bool temp = false, OpenCL *cl = NULL) :  temporary(temp)
 {
 	param.size[0] = x;
 	param.size[1] = y;
 	param.rank = 2;
 	init_data();
+	if (cl != NULL)
+	{
+		TensorUseOpenCL(cl);
+	}
 }
 
-Tensor::Tensor(int x, int y, int z, bool temp = false) :  temporary(temp)
+TensorCL::TensorCL(int x, int y, int z, bool temp = false, OpenCL *cl = NULL) :  temporary(temp)
 {
 	param.size[0] = x;
 	param.size[1] = y;
 	param.size[2] = z;
 	param.rank = 3;
 	init_data();
+	if (cl != NULL)
+	{
+		TensorUseOpenCL(cl);
+	}
 }
 
-Tensor::Tensor(int x, int y, int z, int w, bool temp = false) : temporary(temp)
+TensorCL::TensorCL(int x, int y, int z, int w, bool temp = false, OpenCL *cl = NULL) : temporary(temp)
 {
 	param.size[0] = x;
 	param.size[1] = y;
@@ -68,14 +84,22 @@ Tensor::Tensor(int x, int y, int z, int w, bool temp = false) : temporary(temp)
 	param.size[3] = w;
 	param.rank = 4;
 	init_data();
+	if (cl != NULL)
+	{
+		TensorUseOpenCL(cl);
+	}
 }
 
-Tensor::Tensor(cl_tensor p, bool temp) : temporary(temp), param(p)
+TensorCL::TensorCL(cl_tensor p, bool temp, OpenCL *cl = NULL) : temporary(temp), param(p)
 {
 	init_data();
+	if (cl != NULL)
+	{
+		TensorUseOpenCL(cl);
+	}
 }
 
-Tensor& Tensor::operator=(Tensor & X)
+TensorCL& TensorCL::operator=(TensorCL & X)
 {
 	param = X.param;
 	//if array is temporary - then just copy the CL pointer
@@ -94,16 +118,16 @@ Tensor& Tensor::operator=(Tensor & X)
 	return *this;
 }
 
-Tensor::Tensor(Tensor & X)
+TensorCL::TensorCL(TensorCL & X)
 {
 	*this = X;
 }
 
-Tensor Tensor::operator+(Tensor & X)
+TensorCL TensorCL::operator+(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		Tensor C(param, true); //create a temporary array
+		TensorCL C(param, true); //create a temporary array
 		add.SetRange(CL->group_size[0], 1, param.length, 1);
 		add.SetArg(0, C.data); //result
 		add.SetArg(1, data);
@@ -127,11 +151,11 @@ Tensor Tensor::operator+(Tensor & X)
 	return *this;
 }
 
-Tensor Tensor::operator-(Tensor & X)
+TensorCL TensorCL::operator-(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		Tensor C(param, true); //create a temporary array
+		TensorCL C(param, true); //create a temporary array
 		add.SetRange(CL->group_size[0], 1, param.length, 1);
 		add.SetArg(0, C.data); //result
 		add.SetArg(1, data);
@@ -155,11 +179,11 @@ Tensor Tensor::operator-(Tensor & X)
 	return *this;
 }
 
-Tensor Tensor::operator*(Tensor & X)
+TensorCL TensorCL::operator*(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		Tensor C(param, true); //create a temporary array
+		TensorCL C(param, true); //create a temporary array
 		mul.SetRange(CL->group_size[0], 1, param.length, 1);
 		mul.SetArg(0, C.data); //result
 		mul.SetArg(1, data);
@@ -183,11 +207,11 @@ Tensor Tensor::operator*(Tensor & X)
 	return *this;
 }
 
-Tensor Tensor::operator/(Tensor & X)
+TensorCL TensorCL::operator/(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		Tensor C(param, true); //create a temporary array
+		TensorCL C(param, true); //create a temporary array
 		mul.SetRange(CL->group_size[0], 1, param.length, 1);
 		mul.SetArg(0, C.data); //result
 		mul.SetArg(1, data);
@@ -211,46 +235,44 @@ Tensor Tensor::operator/(Tensor & X)
 	return *this;
 }
 
-Tensor Tensor::operator+(float x)
+TensorCL TensorCL::operator+(float x)
 {
 	return MAD(1.f, x);
 }
 
-Tensor Tensor::operator-(float x)
+TensorCL TensorCL::operator-(float x)
 {
 	return MAD(1.f, -x);
 }
 
-Tensor Tensor::operator*(float x)
+TensorCL TensorCL::operator*(float x)
 {
 	return MAD(x, 0.f);
 }
 
-Tensor Tensor::operator/(float x)
+TensorCL TensorCL::operator/(float x)
 {
 	return MAD(1.f/x, 0.f);
 }
 
-Tensor Tensor::dot(Tensor & X)
+TensorCL TensorCL::dot(TensorCL & X)
 {
 	if (AreTensorsCompatible(param, X.param))
 	{
-		Tensor C(TensorDotResult(param, X.param), true); //create a temporary array
+		TensorCL C(TensorDotResult(param, X.param), true); //create a temporary array
 
-		int shift = 0;
-		for (int i = 0; i < 10; i++)
+		for (int shift = 0; shift < C.param.length; shift += C.param.size[C.param.rank - 2] * C.param.size[C.param.rank - 1])
 		{
-			//for all other dimensions
+			m_dot.SetRange(TS, TS, C.param.size[C.param.rank - 2], C.param.size[C.param.rank - 1]);
+			m_dot.SetArg(0, C.data); //result
+			m_dot.SetArg(1, data);
+			m_dot.SetArg(2, X.data);
+			m_dot.SetArg(3, C.param);
+			m_dot.SetArg(4, param);
+			m_dot.SetArg(5, X.param);
+			m_dot.SetArg(6, shift);
+			m_dot.RFlush();
 		}
-		m_dot.SetRange(TS, TS, C.param.size[C.param.rank-2], C.param.size[C.param.rank - 1]);
-		m_dot.SetArg(0, C.data); //result
-		m_dot.SetArg(1, data);
-		m_dot.SetArg(2, X.data);
-		m_dot.SetArg(3, C.param);
-		m_dot.SetArg(4, param);
-		m_dot.SetArg(5, X.param);
-		m_dot.SetArg(6, shift);
-		m_dot.RFlush();
 
 		if (X.isTemporary())
 		{
@@ -266,9 +288,7 @@ Tensor Tensor::dot(Tensor & X)
 	return *this;
 }
 
-#define TS 8
-
-void Tensor::TensorUseOpenCL(OpenCL *cl)
+void TensorCL::TensorUseOpenCL(OpenCL *cl)
 {
 	CL = cl;
 	add.Initialize("tensor_add", CL, CL->group_size[0], 1, param.length, 1);
@@ -277,9 +297,9 @@ void Tensor::TensorUseOpenCL(OpenCL *cl)
 	m_dot.Initialize("tensor_dot_product", CL, TS, TS, param.size[param.rank-1-1], 1);
 }
 
-Tensor Tensor::MAD(float a, float b)
+TensorCL TensorCL::MAD(float a, float b)
 {
-	Tensor C(param, true); //create a temporary array
+	TensorCL C(param, true); //create a temporary array
 	mad.SetRange(CL->group_size[0], 1, param.length, 1);
 	mad.SetArg(0, C.data); //result
 	mad.SetArg(1, data);

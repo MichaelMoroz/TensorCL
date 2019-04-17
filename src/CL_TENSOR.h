@@ -7,6 +7,7 @@
 using namespace std;
 
 #define MAX_DIM 8
+#define TS 8
 
 #pragma pack(push, r1, 1)
 typedef struct
@@ -30,41 +31,40 @@ cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 
 int GetIndex(cl_index id, cl_tensor param);
 
-class Tensor
+class TensorCL
 {
 public:
-	Tensor(int r, vector<int> s, bool temp); //General tensor init
-	Tensor(int x, bool temp); //vector
-	Tensor(int x, int y, bool temp); //matrix
-	Tensor(int x, int y, int z, bool temp); //3d matrix
-	Tensor(int x, int y, int z, int w, bool temp); //4d matrix
-	Tensor(cl_tensor p, bool temp); //4d matrix
+	TensorCL(int r, vector<int> s, bool temp, OpenCL *cl); //General tensor init
+	TensorCL(int x, bool temp, OpenCL *cl); //vector
+	TensorCL(int x, int y, bool temp, OpenCL *cl); //matrix
+	TensorCL(int x, int y, int z, bool temp, OpenCL *cl); //3d matrix
+	TensorCL(int x, int y, int z, int w, bool temp, OpenCL *cl); //4d matrix
+	TensorCL(cl_tensor p, bool temp, OpenCL *cl);
+	TensorCL(TensorCL & X);
 
-	Tensor& operator=(Tensor &X);
+	TensorCL& operator=(TensorCL &X);
 
-	Tensor(Tensor & X);
+	TensorCL operator+(TensorCL &X);
+	TensorCL operator-(TensorCL &X);
+	TensorCL operator*(TensorCL &X);
+	TensorCL operator/(TensorCL &X);
 
-	Tensor operator+(Tensor &X);
-	Tensor operator-(Tensor &X);
-	Tensor operator*(Tensor &X);
-	Tensor operator/(Tensor &X);
+	TensorCL operator+(float x);
+	TensorCL operator-(float x);
+	TensorCL operator*(float x);
+	TensorCL operator/(float x);
 
-	Tensor operator+(float x);
-	Tensor operator-(float x);
-	Tensor operator*(float x);
-	Tensor operator/(float x);
-
-	Tensor dot(Tensor &X); //dot product, last dimension of this and second to last dimension of X
+	TensorCL dot(TensorCL &X); //dot product, last dimension of this and second to last dimension of X
 
 	bool isTemporary();
 	void release();
 
-	~Tensor();
+	~TensorCL();
 
 private:
 	void init_data();
 	void TensorUseOpenCL(OpenCL* cl);
-	Tensor MAD(float a, float b); //multiplication and addition
+	TensorCL MAD(float a, float b); //multiplication and addition
 
 	bool temporary;
 	cl_tensor param;
