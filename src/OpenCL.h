@@ -126,7 +126,7 @@ public:
 	}
 
 
-	OpenCL(string Kernel_path, int clgl_device, bool mute): failed(false)
+	OpenCL(string Kernel_path, int clgl_device = 0, bool mute = true): failed(false)
 	{
 		ifstream sin(Kernel_path);
 

@@ -23,15 +23,17 @@ public:
 		local = NDRange(local_x, local_y);
 	}
 
-	CLFunction(string progname, OpenCL *C, int local_x, int local_y, int global_x, int global_y)
+	void Initialize(string progname, OpenCL *C)
+	{
+		Initialize(progname, C, 1, 1, 1, 1);
+	}
+
+	CLFunction(string progname, OpenCL *C, int local_x = 1, int local_y = 1, int global_x = 1, int global_y = 1)
 	{
 		Initialize(progname, C, local_x, local_y, global_x, global_y);
 	}
 
-	CLFunction()
-	{
-
-	}
+	CLFunction() { }
 
 	void SetRange(int local_x, int local_y, int global_x, int global_y)
 	{

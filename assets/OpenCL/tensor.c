@@ -17,8 +17,6 @@ typedef struct
 } cl_index;
 #pragma pack(pop, r1)
 
-
-
 __kernel void tensor_add( __global float* C,
 					const __global float* A,
 					const __global float* B,
@@ -43,15 +41,118 @@ __kernel void tensor_mul( __global float* C,
 		C[i] = pow(A[i], a)*pow(B[i], b);
 }
 
-__kernel void tensor_mad( __global float* C,
-					const __global float* A,
-					const cl_tensor Cdata,
-					const float a,
-					const float b)
+__kernel void tensor_index(__global float* C,
+					const cl_tensor Cdata)
 {
 	const int i = get_global_id(0);
 	if (i < Cdata.length)
-		C[i] = A[i]*a + b;
+		C[i] = i;
+}
+
+__kernel void tensor_mad(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const float a,
+	const float b)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = A[i] * a + b;
+}
+
+__kernel void tensor_sin(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = sin(A[i]);
+}
+
+__kernel void tensor_cos(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = cos(A[i]);
+}
+
+__kernel void tensor_tan(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = tan(A[i]);
+}
+
+__kernel void tensor_pow(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const float power)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = pow(A[i],power);
+}
+
+__kernel void tensor_exp(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = exp(A[i]);
+}
+
+__kernel void tensor_log(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = log(A[i]);
+}
+
+__kernel void tensor_min(__global float* C,
+	const __global float* A,
+	const __global float* B,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = min(A[i], B[i]);
+}
+
+__kernel void tensor_max(__global float* C,
+	const __global float* A,
+	const __global float* B,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = max(A[i], B[i]);
+}
+
+__kernel void tensor_min_f(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const float b)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = min(A[i], b);
+}
+
+__kernel void tensor_max_f(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const float b)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = max(A[i], b);
 }
 
 __kernel void tensor_dot_product( __global float* C,
@@ -60,7 +161,8 @@ __kernel void tensor_dot_product( __global float* C,
 							const cl_tensor Cdata,
 							const cl_tensor Adata,
 							const cl_tensor Bdata,
-							const int shift)
+							const int shift,
+							const int shift2)
 {
 	const int M = Adata.size[Adata.rank - 2];
 	const int K = Adata.size[Adata.rank - 1];
