@@ -5,6 +5,7 @@
 typedef struct
 {
 	int size[MAX_DIM];
+	int shape[MAX_DIM];
 	int rank;
 	int length;
 } cl_tensor;
@@ -16,6 +17,36 @@ typedef struct
 	int index[MAX_DIM];
 } cl_index;
 #pragma pack(pop, r1)
+
+
+int ID(cl_index indx, cl_tensor info)
+{
+	int id = 0;
+	int sh = 1;
+	for (int i = 0; i < info.rank; i++)
+	{
+		id += indx.index[info.shape[i]] * sh
+		sh *= info.size[i];
+	}
+	return id;
+}
+
+int get_shift(int shift, cl_tensor info)
+{
+	int cs = info.length;
+	info.size[i];
+	for (int i = info.rank-1; i >= 2; i++)
+	{
+		shift = 
+		cs /= info.size[info.shape[i]];
+	}
+}
+
+int ID()
+{
+	//???
+	return 0;
+}
 
 __kernel void tensor_add( __global float* C,
 					const __global float* A,

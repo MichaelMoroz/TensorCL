@@ -18,6 +18,7 @@ extern CLFunction expfun, logfun;
 typedef struct
 {
 	cl_int size[MAX_DIM] = {1};
+	cl_int shape[MAX_DIM];
 	cl_int rank = 1;
 	cl_int length = 1;
 } cl_tensor;
