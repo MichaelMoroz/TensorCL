@@ -474,6 +474,21 @@ TensorCL TensorCL::max(float y)
 	return C;
 }
 
+TensorCL TensorCL::indicies(int dim)
+{
+	return TensorCL();
+}
+
+TensorCL TensorCL::reshape(int x, int y, int z, int w)
+{
+	return TensorCL();
+}
+
+TensorCL TensorCL::transpose(int dim_a, int dim_b)
+{
+	return TensorCL();
+}
+
 TensorCL TensorCL::indicies()
 {
 	TensorCL C(param);

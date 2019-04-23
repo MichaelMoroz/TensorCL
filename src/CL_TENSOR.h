@@ -78,6 +78,9 @@ public:
 	TensorCL max(float y = 0.f);
 
 	TensorCL indicies();
+	TensorCL indicies(int dim);
+	void reshape(int x = 1, int y = 1, int z = 1, int w = 1);
+	void transpose(int dim_a = 0, int dim_b = 1);
 
 	TensorCL dot(TensorCL &X); //dot product, last dimension of this and second to last dimension of X
 	

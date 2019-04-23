@@ -6,21 +6,25 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	srand(time(NULL));
 
-	OpenCL cl("OpenCL/main.c");
+	OpenCL cl("OpenCL/main.c", false, 0, false);
 
-	TensorUseOpenCL(&cl);
+	if (!cl.failed)
+	{
+		TensorUseOpenCL(&cl);
 
-	TensorCL A(3, 5), B(5, 2, 2, 2);
+		TensorCL A(3, 5), B(5, 2, 2, 2);
 
-	A = 1;
-	B = indicies(B);
+		A = 1;
+		B = indicies(B);
 
-	PrintTensor(A);
-	PrintTensor(B);
+		PrintTensor(A);
+		PrintTensor(B);
 
-	TensorCL DOT = dot(A, B);
+		TensorCL DOT = dot(A, B);
 
-	PrintTensor(DOT);
+		PrintTensor(DOT);
+	}
+	
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
 	font.loadFromFile("arialbd.ttf");
 	int i = 0;

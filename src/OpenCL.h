@@ -126,7 +126,7 @@ public:
 	}
 
 
-	OpenCL(string Kernel_path, int clgl_device = 0, bool mute = true): failed(false)
+	OpenCL(string Kernel_path, bool interop, int cl_device = 0, bool mute = true): failed(false)
 	{
 		ifstream sin(Kernel_path);
 
@@ -165,9 +165,9 @@ public:
 		}
 
 
-		bool found_context = 0;
+		bool found_context = false;
 		
-		int clgl_d_num = 0;
+		int d_num = 0;
 
 		for (int i = 0; i < all_platforms.size(); i++)
 		{
@@ -186,8 +186,9 @@ public:
 				failed = true;
 			}
 
+
 			// Create the properties for this context.
-			cl_context_properties props[] =
+			cl_context_properties props_iop[] =
 			{
 				CL_GL_CONTEXT_KHR,
 				(cl_context_properties)wglGetCurrentContext(), // HGLRC handle
@@ -197,41 +198,81 @@ public:
 				(cl_context_properties)test_platform(), 0
 			};
 
+
+			cl_context_properties props[] =
+			{
+				 CL_CONTEXT_PLATFORM,
+				 (cl_context_properties)test_platform(), 0 
+			};
+
 			// Look for the compatible context.
 			for (int j = 0; j < all_devices.size(); j++)
 			{
 				Device test_device = all_devices[j];
 				cl_device_id aka = test_device();
-				cl::Context test_context(clCreateContext(props, 1, &aka, NULL, NULL, &lError));
-				if (lError == CL_SUCCESS)
+				if (interop)
 				{
-					if (!mute)
+					cl::Context test_context(clCreateContext(props_iop, 1, &aka, NULL, NULL, &lError));
+					if (lError == CL_SUCCESS)
 					{
-						string device_nam = test_device.getInfo<CL_DEVICE_NAME>();
-						ERROR_MSG(("We found a GLCL context! \n" + device_nam).c_str());
+						if (!mute)
+						{
+							string device_nam = test_device.getInfo<CL_DEVICE_NAME>();
+							ERROR_MSG(("We found a GLCL context! \n" + device_nam).c_str());
+						}
+
+						if (cl_device == d_num)
+						{
+
+							default_context = test_context;
+							default_platform = test_platform;
+							default_device = test_device;
+							found_context = 1;
+						}
+						d_num++;
 					}
-					
-					if (clgl_device == clgl_d_num)
-					{
-						
-						default_context = test_context;
-						default_platform = test_platform;
-						default_device = test_device;
-						found_context = 1;
-					}
-					clgl_d_num++;
 				}
+				else
+				{
+					cl::Context test_context(clCreateContext(props, 1, &aka, NULL, NULL, &lError));
+					if (lError == CL_SUCCESS)
+					{
+						if (!mute)
+						{
+							string device_nam = test_device.getInfo<CL_DEVICE_NAME>();
+							ERROR_MSG(("We found a CL context! \n" + device_nam).c_str());
+						}
+
+						if (cl_device == d_num)
+						{
+
+							default_context = test_context;
+							default_platform = test_platform;
+							default_device = test_device;
+							found_context = 1;
+						}
+						d_num++;
+					}
+				}
+				
 			}
 		}
 
-		if (clgl_d_num > 1 && !mute)
+		if (d_num > 1 && !mute)
 		{
-			ERROR_MSG("Multiple interoperation OpenCL devices found, change the device number in config.cfg if program exit's/crashes.");
+			if (interop)
+			{
+				ERROR_MSG("Multiple interoperation OpenCL devices found, change the device number if program exit's/crashes.");
+			}
+			else
+			{
+				ERROR_MSG("Multiple OpenCL devices found, change the device number if program exit's/crashes.");
+			}
 		}
 
 		if (!found_context)
 		{
-			ERROR_MSG("Unable to find a compatible OpenCL device for GL-CL interoperation.");
+			ERROR_MSG("Unable to find a compatible OpenCL device.");
 			failed = true;
 		}
 
