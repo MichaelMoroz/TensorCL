@@ -476,17 +476,23 @@ TensorCL TensorCL::max(float y)
 
 TensorCL TensorCL::indicies(int dim)
 {
-	return TensorCL();
+	TensorCL C(param);
+	idx.SetRange(CL->group_size[0], 1, param.length, 1);
+	idx.SetArg(0, C.data); //result
+	idx.SetArg(1, param);
+	idx.SetArg(2, dim);
+	idx.RFlush();
+	return C;
 }
 
-TensorCL TensorCL::reshape(int x, int y, int z, int w)
+void TensorCL::reshape(int x, int y, int z, int w)
 {
-	return TensorCL();
+	
 }
 
-TensorCL TensorCL::transpose(int dim_a, int dim_b)
+void TensorCL::transpose(int dim_a, int dim_b)
 {
-	return TensorCL();
+	
 }
 
 TensorCL TensorCL::indicies()
