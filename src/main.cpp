@@ -10,18 +10,17 @@ int main(int argc, char *argv[]) {
 
 	TensorUseOpenCL(&cl);
 
-	TensorCL A(3, 4), B(3, 4);
+	TensorCL A(3, 5), B(5, 2, 2, 2);
 
-	A = indicies(A);
+	A = 1;
+	B = indicies(B);
 
 	PrintTensor(A);
 	PrintTensor(B);
 
-	TensorCL C = max(sin(3.14159265f + A), 0.f);
-	TensorCL D = min(sin(3.14159265f + A), 0.f);
+	TensorCL DOT = dot(A, B);
 
-	PrintTensor(C);
-	PrintTensor(D);
+	PrintTensor(DOT);
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
 	font.loadFromFile("arialbd.ttf");
 	int i = 0;

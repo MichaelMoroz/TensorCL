@@ -318,17 +318,25 @@ TensorCL TensorCL::dot(TensorCL & X)
 	{
 		TensorCL C(TensorDotResult(param, X.param)); //create a temporary array
 
-		for (int shift = 0; shift < C.param.length; shift += C.param.size[C.param.rank - 2] * C.param.size[C.param.rank - 1])
+		m_dot.SetRange(TS, TS, C.param.size[0], C.param.size[1]);
+		m_dot.SetArg(0, C.data); //result
+		m_dot.SetArg(1, data);
+		m_dot.SetArg(2, X.data);
+		m_dot.SetArg(3, C.param);
+		m_dot.SetArg(4, param);
+		m_dot.SetArg(5, X.param);
+
+		int shiftA = 0;
+		int shiftB = 0;
+		for (int shiftC = 0; shiftC < C.param.length; shiftC += C.param.size[0] * C.param.size[1])
 		{
-			m_dot.SetRange(TS, TS, C.param.size[C.param.rank - 2], C.param.size[C.param.rank - 1]);
-			m_dot.SetArg(0, C.data); //result
-			m_dot.SetArg(1, data);
-			m_dot.SetArg(2, X.data);
-			m_dot.SetArg(3, C.param);
-			m_dot.SetArg(4, param);
-			m_dot.SetArg(5, X.param);
-			m_dot.SetArg(6, shift);
+			m_dot.SetArg(6, shiftA);
+			m_dot.SetArg(7, shiftB);
+			m_dot.SetArg(8, shiftC);
 			m_dot.RFlush();
+
+			shiftA = (shiftA + this->param.size[0] * this->param.size[1]) % this->GetLength();
+			shiftB = (shiftB + X.param.size[0] * X.param.size[1]) % X.GetLength();
 		}
 
 		return C;
@@ -383,13 +391,23 @@ void PrintTensor(TensorCL & a)
 {
 	float* hd = a.GetData();
 	cl_tensor T = a.GetParam();
-	for (int shift = 0; shift < T.length; shift += T.size[T.rank - 2] * T.size[T.rank - 1])
+	std::cout << "=====================================" << std::endl;
+	for (int i = 0; i < T.rank; i++)
 	{
-		for (int i = 0; i < T.size[T.rank - 2]; i++)
+		std::cout << T.size[i];
+		if (i < T.rank - 1)
 		{
-			for (int j = 0; j < T.size[T.rank - 1]; j++)
+			std::cout << "*";
+		}
+	}
+	std::cout << std::endl;
+	for (int shift = 0; shift < T.length; shift += T.size[0] * T.size[1])
+	{
+		for (int i = 0; i < T.size[0]; i++)
+		{
+			for (int j = 0; j < T.size[1]; j++)
 			{
-				std::cout << hd[shift + T.size[T.rank - 2]*i + j] << " ";
+				std::cout << hd[shift + T.size[0]*j + i] << " ";
 			}
 			std::cout << std::endl;
 		}
@@ -494,22 +512,22 @@ bool AreTensorsEqual(cl_tensor x, cl_tensor y)
 bool AreTensorsCompatible(cl_tensor x, cl_tensor y)
 {
 	bool comp = true;
-	comp = comp && (x.rank == y.rank);
+	comp = comp && (x.rank <= y.rank);
 
-	for (int i = 0; i < x.rank - 2; i++)
+	for (int i = 2; i < x.rank; i++)
 	{
-		comp = comp && (x.size[i] == y.size[i]);
+		comp = comp && (x.size[i] == y.size[i] || x.size[i] == 0 || x.size[i] == 1);
 	}
 	
-	comp = comp && (x.size[x.rank - 1] == y.size[y.rank - 1 - 1]);
+	comp = comp && (x.size[1] == y.size[0]);
 	return comp;
 }
 
 cl_tensor TensorDotResult(cl_tensor x, cl_tensor y)
 {
-	cl_tensor res = x;
-	res.size[res.rank - 1] = y.size[res.rank - 1];
-	//res.size[res.rank - 1 - 1] = x.size[res.rank - 1 - 1];
+	cl_tensor res = y;
+	res.size[0] = x.size[0];
+
 	res.length = 1;
 	for (int i = 0; i < res.rank; i++)
 	{

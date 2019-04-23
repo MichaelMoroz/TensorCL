@@ -161,12 +161,13 @@ __kernel void tensor_dot_product( __global float* C,
 							const cl_tensor Cdata,
 							const cl_tensor Adata,
 							const cl_tensor Bdata,
-							const int shift,
-							const int shift2)
+							const int shiftA,
+							const int shiftB,
+							const int shiftC)
 {
-	const int M = Adata.size[Adata.rank - 2];
-	const int K = Adata.size[Adata.rank - 1];
-	const int N = Bdata.size[Bdata.rank - 1];
+	const int M = Adata.size[0];
+	const int K = Adata.size[1];
+	const int N = Bdata.size[1];
 
 	// Thread identifiers
 	const int row = get_local_id(0); // Local row ID (max: TS)
@@ -190,8 +191,8 @@ __kernel void tensor_dot_product( __global float* C,
 		const int tiledRow = TS * t + row;
 		const int tiledCol = TS * t + col;
 
-		Asub[col][row] = (tiledCol < K) ? (A[tiledCol*M + globalRow + shift]) : (0);
-		Bsub[col][row] = (tiledRow < K) ? (B[globalCol*K + tiledRow + shift]) : (0);
+		Asub[col][row] = (tiledCol < K) ? (A[tiledCol*M + globalRow + shiftA]) : (0);
+		Bsub[col][row] = (tiledRow < K) ? (B[globalCol*K + tiledRow + shiftB]) : (0);
 
 		// Synchronise to make sure the tile is loaded
 		barrier(CLK_LOCAL_MEM_FENCE);
@@ -207,5 +208,5 @@ __kernel void tensor_dot_product( __global float* C,
 
 	// Store the result
 	if (globalRow < M && globalCol < N)
-		C[globalCol*M + globalRow + shift] = acc;
+		C[globalCol*M + globalRow + shiftC] = acc;
 }
