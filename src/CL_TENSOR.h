@@ -6,11 +6,6 @@
 
 using namespace std;
 
-extern OpenCL *CL;
-extern CLFunction add, mul, mad, m_dot; //tensor addition with coeff, tensor per element mul, tensor multiplied by a number, last dimesion dot product
-extern CLFunction idx, sinfun, cosfun, tanfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
-extern CLFunction expfun, logfun;
-
 #define MAX_DIM 8
 #define TS 8
 
@@ -18,7 +13,6 @@ extern CLFunction expfun, logfun;
 typedef struct
 {
 	cl_int size[MAX_DIM] = {1};
-	cl_int shape[MAX_DIM];
 	cl_int rank = 1;
 	cl_int length = 1;
 } cl_tensor;
@@ -35,7 +29,7 @@ bool AreTensorsEqual(cl_tensor x, cl_tensor y);
 bool AreTensorsCompatible(cl_tensor x, cl_tensor y);
 cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 
-int GetIndex(cl_index id, cl_tensor param);
+cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b);
 void TensorUseOpenCL(OpenCL* cl);
 
 class TensorCL
@@ -78,10 +72,9 @@ public:
 	TensorCL min(float y = 0.f);
 	TensorCL max(float y = 0.f);
 
-	TensorCL indicies();
 	TensorCL indicies(int dim);
 	void reshape(int x = 1, int y = 1, int z = 1, int w = 1);
-	void transpose(int dim_a = 0, int dim_b = 1);
+	TensorCL transpose(int dim_a = 0, int dim_b = 1);
 
 	TensorCL dot(TensorCL &X); //dot product, last dimension of this and second to last dimension of X
 	
@@ -127,5 +120,5 @@ TensorCL min(float y, TensorCL& X);
 TensorCL max(float y, TensorCL& X);
 
 TensorCL dot(TensorCL& X, TensorCL& Y);
-
-TensorCL indicies(TensorCL& X);
+TensorCL indicies(TensorCL& X, int dim = 0);
+TensorCL transpose(TensorCL& X, int dim_a = 0, int dim_b = 1);

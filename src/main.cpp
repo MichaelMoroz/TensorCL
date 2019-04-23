@@ -6,23 +6,23 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	srand(time(NULL));
 
-	OpenCL cl("OpenCL/main.c", false, 0, false);
+	OpenCL cl("OpenCL/main.c", false);
 
 	if (!cl.failed)
 	{
 		TensorUseOpenCL(&cl);
 
-		TensorCL A(3, 5), B(5, 2, 2, 2);
+		TensorCL A(3, 5), B(5, 2, 2);
 
-		A = 1;
-		B = indicies(B);
-
+		A = indicies(A, 0) + 1;
 		PrintTensor(A);
+		B = indicies(B, 1) + 1 + indicies(B, 2);
 		PrintTensor(B);
 
 		TensorCL DOT = dot(A, B);
 
 		PrintTensor(DOT);
+		PrintTensor(transpose(DOT,0,1));
 	}
 	
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);

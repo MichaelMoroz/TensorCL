@@ -3,7 +3,7 @@
 OpenCL *CL;
 CLFunction add, mul, mad, m_dot;
 CLFunction idx, sinfun, cosfun, tanfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
-CLFunction expfun, logfun;
+CLFunction expfun, logfun, transposefun;
 
 void TensorCL::release()
 {
@@ -368,6 +368,14 @@ cl_tensor TensorCL::GetParam()
 	return param;
 }
 
+cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b)
+{
+	int buf = x.size[dim_a];
+	x.size[dim_a] = x.size[dim_b];
+	x.size[dim_b] = buf;
+	return x;
+}
+
 void TensorUseOpenCL(OpenCL *cl)
 {
 	CL = cl;
@@ -385,6 +393,7 @@ void TensorUseOpenCL(OpenCL *cl)
 	minfun_f.Initialize("tensor_min_f", CL);
 	expfun.Initialize("tensor_exp", CL);
 	logfun.Initialize("tensor_log", CL);
+	transposefun.Initialize("tensor_transpose", CL); 
 }
 
 void PrintTensor(TensorCL & a)
@@ -490,18 +499,17 @@ void TensorCL::reshape(int x, int y, int z, int w)
 	
 }
 
-void TensorCL::transpose(int dim_a, int dim_b)
+TensorCL TensorCL::transpose(int dim_a, int dim_b)
 {
-	
-}
-
-TensorCL TensorCL::indicies()
-{
-	TensorCL C(param);
-	idx.SetRange(CL->group_size[0], 1, param.length, 1);
-	idx.SetArg(0, C.data); //result
-	idx.SetArg(1, param);
-	idx.RFlush();
+	TensorCL C(Transpose(param, dim_a, dim_b));
+	transposefun.SetRange(CL->group_size[0], 1, param.length, 1);
+	transposefun.SetArg(0, C.data); //result
+	transposefun.SetArg(1, data);
+	transposefun.SetArg(2, C.param);
+	transposefun.SetArg(3, param);
+	transposefun.SetArg(4, dim_a);
+	transposefun.SetArg(5, dim_b);
+	transposefun.RFlush();
 	return C;
 }
 
@@ -632,7 +640,13 @@ TensorCL dot(TensorCL & X, TensorCL & Y)
 	return X.dot(Y);
 }
 
-TensorCL indicies(TensorCL & X)
+TensorCL indicies(TensorCL & X, int dim)
 {
-	return X.indicies();
+	return  X.indicies(dim);
 }
+
+TensorCL transpose(TensorCL & X, int dim_a, int dim_b)
+{
+	return X.transpose(dim_a, dim_b);
+}
+

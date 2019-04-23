@@ -5,7 +5,6 @@
 typedef struct
 {
 	int size[MAX_DIM];
-	int shape[MAX_DIM];
 	int rank;
 	int length;
 } cl_tensor;
@@ -25,27 +24,30 @@ int ID(cl_index indx, cl_tensor info)
 	int sh = 1;
 	for (int i = 0; i < info.rank; i++)
 	{
-		id += indx.index[info.shape[i]] * sh
+		id += indx.index[i] * sh;
 		sh *= info.size[i];
 	}
 	return id;
 }
 
-int get_shift(int shift, cl_tensor info)
+cl_index get_index(int id, cl_tensor info)
 {
-	int cs = info.length;
-	info.size[i];
-	for (int i = info.rank-1; i >= 2; i++)
+	cl_index idx;
+	int sh = 1;
+	for (int i = 0; i < info.rank; i++)
 	{
-		shift = 
-		cs /= info.size[info.shape[i]];
+		idx.index[i] = floor((float)id/ (float)sh) - info.size[i] * floor((float)id / (float)( info.size[i] * sh ));
+		sh *= info.size[i];
 	}
+	return idx;
 }
 
-int ID()
+cl_index transpose(cl_index T, int a, int b)
 {
-	//???
-	return 0;
+	int buf = T.index[a];
+	T.index[a] = T.index[b];
+	T.index[b] = buf;
+	return T;
 }
 
 __kernel void tensor_add( __global float* C,
@@ -73,11 +75,12 @@ __kernel void tensor_mul( __global float* C,
 }
 
 __kernel void tensor_index(__global float* C,
-					const cl_tensor Cdata)
+					const cl_tensor Cdata,
+					int dim)
 {
 	const int i = get_global_id(0);
 	if (i < Cdata.length)
-		C[i] = i;
+		C[i] = get_index(i, Cdata).index[dim];
 }
 
 __kernel void tensor_mad(__global float* C,
@@ -184,6 +187,18 @@ __kernel void tensor_max_f(__global float* C,
 	const int i = get_global_id(0);
 	if (i < Cdata.length)
 		C[i] = max(A[i], b);
+}
+
+__kernel void tensor_transpose(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const cl_tensor Adata,
+	const int dim_a,
+	const int dim_b )
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = A[ID(transpose(get_index(i, Cdata), dim_a, dim_b), Adata)];
 }
 
 __kernel void tensor_dot_product( __global float* C,
