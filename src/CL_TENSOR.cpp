@@ -2,7 +2,7 @@
 
 OpenCL *CL;
 CLFunction add, mul, mad, m_dot;
-CLFunction idx, sinfun, cosfun, tanfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
+CLFunction idx, sinfun, cosfun, tanfun, tanhfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
 CLFunction expfun, logfun, transposefun;
 CLFunction sumfun;
 
@@ -301,6 +301,17 @@ TensorCL TensorCL::log()
 	return C;
 }
 
+TensorCL TensorCL::tanh()
+{
+	TensorCL C(param); //create a temporary array
+	tanhfun.SetRange(CL->group_size[0], 1, param.length, 1);
+	tanhfun.SetArg(0, C.data); //result
+	tanhfun.SetArg(1, data);
+	tanhfun.SetArg(2, param);
+	tanhfun.RFlush();
+	return C;
+}
+
 TensorCL TensorCL::operator^(float y)
 {
 	TensorCL C(param); //create a temporary array
@@ -404,6 +415,7 @@ void TensorUseOpenCL(OpenCL *cl)
 	logfun.Initialize("tensor_log", CL);
 	transposefun.Initialize("tensor_transpose", CL); 
 	sumfun.Initialize("tensor_sum", CL);
+	tanhfun.Initialize("tensor_tanh", CL);
 }
 
 void PrintTensor(TensorCL & a)
@@ -625,6 +637,12 @@ TensorCL exp(TensorCL & X)
 TensorCL log(TensorCL & X)
 {
 	return X.log();
+}
+
+
+TensorCL tanh(TensorCL & X)
+{
+	return X.tanh();
 }
 
 TensorCL sum(TensorCL & X)

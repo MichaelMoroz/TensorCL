@@ -149,6 +149,15 @@ __kernel void tensor_log(__global float* C,
 		C[i] = log(A[i]);
 }
 
+__kernel void tensor_tanh(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = tanh(A[i]);
+}
+
 __kernel void tensor_min(__global float* C,
 	const __global float* A,
 	const __global float* B,

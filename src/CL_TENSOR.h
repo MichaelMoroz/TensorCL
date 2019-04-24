@@ -68,6 +68,7 @@ public:
 	TensorCL tan();
 	TensorCL exp();
 	TensorCL log();
+	TensorCL tanh();
 	TensorCL operator^(float y); //power
 
 	TensorCL sum();
@@ -116,6 +117,7 @@ TensorCL tan(TensorCL& X);
 TensorCL exp(TensorCL& X);
 TensorCL log(TensorCL& X);
 TensorCL sum(TensorCL& X);
+TensorCL tanh(TensorCL& X);
 
 TensorCL min(TensorCL &X, TensorCL& Y);
 TensorCL max(TensorCL &X, TensorCL& Y);
