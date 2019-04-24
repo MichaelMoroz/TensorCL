@@ -1,5 +1,4 @@
 #pragma once
-#include <SFML_plot.h>
 #include <CLFunction.h>
 #include <vector>
 #include <iomanip>
@@ -8,6 +7,9 @@ using namespace std;
 
 #define MAX_DIM 8
 #define TS 8
+
+#undef min
+#undef max
 
 #pragma pack(push, r1, 1)
 typedef struct

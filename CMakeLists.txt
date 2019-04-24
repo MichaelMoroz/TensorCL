@@ -20,7 +20,11 @@ include_directories(${GLCL_DIR})
 
 add_subdirectory(src)
 
-target_include_directories(NeuralNetworkCLSources PUBLIC
+target_include_directories(CL_TENSOR PUBLIC
+  src
+)
+
+target_include_directories(SFML_plot PUBLIC
   src
   ${SFML_INCLUDE_DIR}
   ${ANTTWEAKBAR_DIR}/include
@@ -35,7 +39,8 @@ add_custom_command(TARGET NeuralNetworkCL PRE_BUILD
 
 target_compile_definitions(NeuralNetworkCL PRIVATE SFML_STATIC)
 target_link_libraries(NeuralNetworkCL
-  NeuralNetworkCLSources
+  CL_TENSOR
+  SFML_plot
   sfml-system
   sfml-window
   sfml-graphics

@@ -46,7 +46,7 @@ public:
 		cl_int arg_error = kernel.setArg(i, A);
 		if (arg_error != CL_SUCCESS)
 		{
-			string err = "OpenCL setArg " + num2str(i) + " error: " + getOpenCLError(arg_error);
+			string err = "OpenCL setArg " + num_to_str(i) + " error: " + getOpenCLError(arg_error);
 			ERROR_MSG(err.c_str());
 		}
 	}
@@ -56,7 +56,7 @@ public:
 		cl_int arg_error = kernel.setArg(i, A);
 		if (arg_error != CL_SUCCESS)
 		{
-			string err = "OpenCL setArg " + num2str(i) + " error: " + getOpenCLError(arg_error);
+			string err = "OpenCL setArg " + num_to_str(i) + " error: " + getOpenCLError(arg_error);
 			ERROR_MSG(err.c_str());
 		}
 	}
@@ -66,7 +66,7 @@ public:
 		cl_int arg_error = kernel.setArg(i, A);
 		if (arg_error != CL_SUCCESS)
 		{
-			string err = "OpenCL setArg " + num2str(i) + " error: " + getOpenCLError(arg_error);
+			string err = "OpenCL setArg " + num_to_str(i) + " error: " + getOpenCLError(arg_error);
 			ERROR_MSG(err.c_str());
 		}
 	}
@@ -76,7 +76,7 @@ public:
 		cl_int arg_error = kernel.setArg(i, A);
 		if (arg_error != CL_SUCCESS)
 		{
-			string err = "OpenCL setArg " + num2str(i) + " error: " + getOpenCLError(arg_error);
+			string err = "OpenCL setArg " + num_to_str(i) + " error: " + getOpenCLError(arg_error);
 			ERROR_MSG(err.c_str());
 		}
 	}
@@ -87,7 +87,7 @@ public:
 		cl_int arg_error = kernel.setArg(i, sizeof(float)*N, A);
 		if (arg_error != CL_SUCCESS)
 		{
-			string err = "OpenCL setArg " + num2str(i) + " error: " + getOpenCLError(arg_error);
+			string err = "OpenCL setArg " + num_to_str(i) + " error: " + getOpenCLError(arg_error);
 			ERROR_MSG(err.c_str());
 		}
 	}
@@ -98,7 +98,7 @@ public:
 		cl_int arg_error = kernel.setArg(i, size, (void*)&A);
 		if (arg_error != CL_SUCCESS)
 		{
-			string err = "OpenCL setArg " + num2str(i) + " error: " + getOpenCLError(arg_error);
+			string err = "OpenCL setArg " + num_to_str(i) + " error: " + getOpenCLError(arg_error);
 			ERROR_MSG(err.c_str());
 		}
 	}

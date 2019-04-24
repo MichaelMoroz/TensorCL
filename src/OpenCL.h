@@ -1,7 +1,6 @@
 #pragma once
 #include <omp.h>
 #include <GL/glew.h>
-#include <SFML/OpenGL.hpp>
 #include <CL/cl.hpp>
 #include <CL/cl_gl.h>
 #include <string>
@@ -21,6 +20,15 @@
 
 using namespace cl;
 using namespace std;
+
+template < typename T > std::string num_to_str(const T& n)
+{
+	std::ostringstream stm;
+	stm << std::setprecision(7) << floor(100 * n) / 100.f;
+	return stm.str();
+}
+
+
 
 template<class gen_int> string getOpenCLError(gen_int error)
 {
@@ -161,7 +169,7 @@ public:
 
 		if (!mute)
 		{
-			ERROR_MSG((num2str(all_platforms.size()) + " platforms found").c_str());
+			ERROR_MSG((num_to_str(all_platforms.size()) + " platforms found").c_str());
 		}
 
 
