@@ -30,6 +30,7 @@ bool AreTensorsCompatible(cl_tensor x, cl_tensor y);
 cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 
 cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b);
+cl_tensor GetSumTensor(cl_tensor x);
 void TensorUseOpenCL(OpenCL* cl);
 
 class TensorCL
@@ -67,6 +68,7 @@ public:
 	TensorCL log();
 	TensorCL operator^(float y); //power
 
+	TensorCL sum();
 	TensorCL min(TensorCL &X);
 	TensorCL max(TensorCL &X);
 	TensorCL min(float y = 0.f);
@@ -111,6 +113,7 @@ TensorCL cos(TensorCL& X);
 TensorCL tan(TensorCL& X); 
 TensorCL exp(TensorCL& X);
 TensorCL log(TensorCL& X);
+TensorCL sum(TensorCL& X);
 
 TensorCL min(TensorCL &X, TensorCL& Y);
 TensorCL max(TensorCL &X, TensorCL& Y);

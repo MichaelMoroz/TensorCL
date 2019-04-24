@@ -201,6 +201,24 @@ __kernel void tensor_transpose(__global float* C,
 		C[i] = A[ID(transpose(get_index(i, Cdata), dim_a, dim_b), Adata)];
 }
 
+__kernel void tensor_sum(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const cl_tensor Adata)
+{
+	const int i = get_global_id(0);
+	cl_index id = get_index(i, Cdata);
+	float sum = 0.f;
+	for (int j = 0; j < Adata.size[Cdata.rank]; j++)
+	{
+		id.index[Cdata.rank] = j;
+		sum += A[ID(id, Adata)];
+	}
+	
+	if (i < Cdata.length)
+		C[i] = sum;
+}
+
 __kernel void tensor_dot_product( __global float* C,
 							const __global float* A,
 							const __global float* B,

@@ -4,6 +4,7 @@ OpenCL *CL;
 CLFunction add, mul, mad, m_dot;
 CLFunction idx, sinfun, cosfun, tanfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
 CLFunction expfun, logfun, transposefun;
+CLFunction sumfun;
 
 void TensorCL::release()
 {
@@ -376,6 +377,14 @@ cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b)
 	return x;
 }
 
+cl_tensor GetSumTensor(cl_tensor x)
+{
+	x.length = x.length / x.size[x.rank - 1];
+	x.size[x.rank-1] = 1;
+	x.rank -= 1;
+	return x;
+}
+
 void TensorUseOpenCL(OpenCL *cl)
 {
 	CL = cl;
@@ -394,6 +403,7 @@ void TensorUseOpenCL(OpenCL *cl)
 	expfun.Initialize("tensor_exp", CL);
 	logfun.Initialize("tensor_log", CL);
 	transposefun.Initialize("tensor_transpose", CL); 
+	sumfun.Initialize("tensor_sum", CL);
 }
 
 void PrintTensor(TensorCL & a)
@@ -435,37 +445,49 @@ TensorCL operator-(float x, TensorCL & Y)
 	return -Y + x;
 }
 
+TensorCL TensorCL::sum()
+{
+	TensorCL C(GetSumTensor(GetParam())); //create a temporary array
+	sumfun.SetRange(CL->group_size[0], 1, C.GetParam().length, 1);
+	sumfun.SetArg(0, C.data); //result
+	sumfun.SetArg(1, data);
+	sumfun.SetArg(2, C.GetParam());
+	sumfun.SetArg(3, GetParam());
+	sumfun.RFlush();
+	return C;
+}
+
 TensorCL TensorCL::min(TensorCL &X)
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	minfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	minfun.SetArg(0, C.data); //result
 	minfun.SetArg(1, data);
 	minfun.SetArg(2, X.data);
-	minfun.SetArg(3, param);
+	minfun.SetArg(3, GetParam());
 	minfun.RFlush();
 	return C;
 }
 
 TensorCL TensorCL::max(TensorCL &X)
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	maxfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	maxfun.SetArg(0, C.data); //result
 	maxfun.SetArg(1, data);
 	maxfun.SetArg(2, X.data);
-	maxfun.SetArg(3, param);
+	maxfun.SetArg(3, GetParam());
 	maxfun.RFlush();
 	return C;
 }
 
 TensorCL TensorCL::min(float y)
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	minfun_f.SetRange(CL->group_size[0], 1, param.length, 1);
 	minfun_f.SetArg(0, C.data); //result
 	minfun_f.SetArg(1, data);
-	minfun_f.SetArg(2, param);
+	minfun_f.SetArg(2, GetParam());
 	minfun_f.SetArg(3, y);
 	minfun_f.RFlush();
 	return C;
@@ -473,11 +495,11 @@ TensorCL TensorCL::min(float y)
 
 TensorCL TensorCL::max(float y)
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	maxfun_f.SetRange(CL->group_size[0], 1, param.length, 1);
 	maxfun_f.SetArg(0, C.data); //result
 	maxfun_f.SetArg(1, data);
-	maxfun_f.SetArg(2, param);
+	maxfun_f.SetArg(2, GetParam());
 	maxfun_f.SetArg(3, y);
 	maxfun_f.RFlush();
 	return C;
@@ -485,10 +507,10 @@ TensorCL TensorCL::max(float y)
 
 TensorCL TensorCL::indicies(int dim)
 {
-	TensorCL C(param);
+	TensorCL C(GetParam());
 	idx.SetRange(CL->group_size[0], 1, param.length, 1);
 	idx.SetArg(0, C.data); //result
-	idx.SetArg(1, param);
+	idx.SetArg(1, GetParam());
 	idx.SetArg(2, dim);
 	idx.RFlush();
 	return C;
@@ -501,12 +523,12 @@ void TensorCL::reshape(int x, int y, int z, int w)
 
 TensorCL TensorCL::transpose(int dim_a, int dim_b)
 {
-	TensorCL C(Transpose(param, dim_a, dim_b));
+	TensorCL C(Transpose(GetParam(), dim_a, dim_b));
 	transposefun.SetRange(CL->group_size[0], 1, param.length, 1);
 	transposefun.SetArg(0, C.data); //result
 	transposefun.SetArg(1, data);
-	transposefun.SetArg(2, C.param);
-	transposefun.SetArg(3, param);
+	transposefun.SetArg(2, C.GetParam());
+	transposefun.SetArg(3, GetParam());
 	transposefun.SetArg(4, dim_a);
 	transposefun.SetArg(5, dim_b);
 	transposefun.RFlush();
@@ -515,11 +537,11 @@ TensorCL TensorCL::transpose(int dim_a, int dim_b)
 
 TensorCL TensorCL::MAD(float a, float b)
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	mad.SetRange(CL->group_size[0], 1, param.length, 1);
 	mad.SetArg(0, C.data); //result
 	mad.SetArg(1, data);
-	mad.SetArg(2, param);
+	mad.SetArg(2, GetParam());
 	mad.SetArg(3, a);
 	mad.SetArg(4, b);
 	mad.RFlush();
@@ -603,6 +625,11 @@ TensorCL exp(TensorCL & X)
 TensorCL log(TensorCL & X)
 {
 	return X.log();
+}
+
+TensorCL sum(TensorCL & X)
+{
+	return X.sum();
 }
 
 TensorCL min(TensorCL & X, TensorCL & Y)

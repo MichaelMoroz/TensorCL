@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 		TensorCL DOT = dot(A, B);
 
 		PrintTensor(DOT);
-		PrintTensor(transpose(DOT,0,1));
+		PrintTensor(sum(transpose(DOT,0,2)));
 	}
 	
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
