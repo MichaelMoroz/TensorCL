@@ -3,7 +3,7 @@
 OpenCL *CL;
 CLFunction add, mul, mad, m_dot;
 CLFunction idx, sinfun, cosfun, tanfun, tanhfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
-CLFunction expfun, logfun, transposefun;
+CLFunction expfun, logfun, transposefun, repeatfun;
 CLFunction sumfun;
 
 void TensorCL::release()
@@ -51,29 +51,6 @@ TensorCL::TensorCL(int r, vector<int> s)
 	init_data();
 }
 
-TensorCL::TensorCL(int x)
-{
-	param.size[0] = x;
-	param.rank = 2;
-	init_data();
-}
-
-TensorCL::TensorCL(int x, int y)
-{
-	param.size[0] = x;
-	param.size[1] = y;
-	param.rank = 2;
-	init_data();
-}
-
-TensorCL::TensorCL(int x, int y, int z)
-{
-	param.size[0] = x;
-	param.size[1] = y;
-	param.size[2] = z;
-	param.rank = 3;
-	init_data();
-}
 
 TensorCL::TensorCL(int x, int y, int z, int w) 
 {
@@ -81,7 +58,21 @@ TensorCL::TensorCL(int x, int y, int z, int w)
 	param.size[1] = y;
 	param.size[2] = z;
 	param.size[3] = w;
-	param.rank = 4;
+
+	if (y > 1)
+	{
+		param.rank = 2;
+	}
+
+	if (z > 1)
+	{
+		param.rank = 3;
+	}
+
+	if (w > 1)
+	{
+		param.rank = 4;
+	}
 	init_data();
 }
 
@@ -396,6 +387,11 @@ cl_tensor GetSumTensor(cl_tensor x)
 	return x;
 }
 
+cl_tensor Repeat(cl_tensor x)
+{
+	return cl_tensor();
+}
+
 void TensorUseOpenCL(OpenCL *cl)
 {
 	CL = cl;
@@ -416,6 +412,7 @@ void TensorUseOpenCL(OpenCL *cl)
 	transposefun.Initialize("tensor_transpose", CL); 
 	sumfun.Initialize("tensor_sum", CL);
 	tanhfun.Initialize("tensor_tanh", CL);
+	repeatfun.Initialize("tensor_repeat", CL);
 }
 
 void PrintTensor(TensorCL & a)
@@ -544,6 +541,22 @@ TensorCL TensorCL::transpose(int dim_a, int dim_b)
 	transposefun.SetArg(4, dim_a);
 	transposefun.SetArg(5, dim_b);
 	transposefun.RFlush();
+	return C;
+}
+
+TensorCL TensorCL::repeat(int xn, int yn, int zn, int wn)
+{
+	TensorCL C(Repeat(GetParam(), xn, yn, zn, wn));
+	repeatfun.SetRange(CL->group_size[0], 1, param.length, 1);
+	repeatfun.SetArg(0, C.data); //result
+	repeatfun.SetArg(1, data);
+	repeatfun.SetArg(2, C.GetParam());
+	repeatfun.SetArg(3, GetParam());
+	repeatfun.SetArg(4, xn);
+	repeatfun.SetArg(5, yn);
+	repeatfun.SetArg(6, zn);
+	repeatfun.SetArg(7, wn);
+	repeatfun.RFlush();
 	return C;
 }
 
@@ -688,6 +701,11 @@ TensorCL dot(TensorCL & X, TensorCL & Y)
 TensorCL indicies(TensorCL & X, int dim)
 {
 	return  X.indicies(dim);
+}
+
+TensorCL repeat(TensorCL & X, int xn, int yn, int zn, int wn)
+{
+	return X.repeat(xn, yn, zn, wn);
 }
 
 TensorCL transpose(TensorCL & X, int dim_a, int dim_b)

@@ -33,16 +33,14 @@ cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 
 cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b);
 cl_tensor GetSumTensor(cl_tensor x);
+cl_tensor Repeat(cl_tensor x); //TODO
 void TensorUseOpenCL(OpenCL* cl);
 
 class TensorCL
 {
 public:
-	TensorCL(int r, vector<int> s); //General tensor init
-	TensorCL(int x); //vector
-	TensorCL(int x, int y); //matrix
-	TensorCL(int x, int y, int z); //3d matrix
-	TensorCL(int x, int y, int z, int w); //4d matrix
+	TensorCL(int r, vector<int> s); 
+	TensorCL(int x = 1, int y = 1, int z = 1, int w = 1); 
 	TensorCL(cl_tensor p);
 
 	TensorCL(TensorCL & X);
@@ -78,8 +76,9 @@ public:
 	TensorCL max(float y = 0.f);
 
 	TensorCL indicies(int dim);
-	void reshape(int x = 1, int y = 1, int z = 1, int w = 1);
+	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
 	TensorCL transpose(int dim_a = 0, int dim_b = 1);
+	TensorCL repeat(int xn = 1, int yn = 1, int zn = 1, int wn = 1);
 
 	TensorCL dot(TensorCL &X); //dot product, last dimension of this and second to last dimension of X
 	
@@ -128,4 +127,5 @@ TensorCL max(float y, TensorCL& X);
 
 TensorCL dot(TensorCL& X, TensorCL& Y);
 TensorCL indicies(TensorCL& X, int dim = 0);
+TensorCL repeat(TensorCL& X, int xn = 1, int yn = 1, int zn = 1, int wn = 1);
 TensorCL transpose(TensorCL& X, int dim_a = 0, int dim_b = 1);

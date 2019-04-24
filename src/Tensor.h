@@ -8,8 +8,9 @@ public:
 	Tensor(TensorCL input);
 	~Tensor();
 
+	void CLEAR_TAPE();
+
 private:
-	TensorCL DATA;
 
 	enum OPERATION
 	{
@@ -21,14 +22,13 @@ private:
 		TRANSPOSE, DOT
 	};
 
-	//the autodiff stuff
-	OPERATION op;
-
 	//the id of this element inside the tape
 	int tape_id;
 
-	//the id's of the parent nodes
-	int node_1, node_2;
-
+	// operation trees/recording tape
+	// only one instance exists
+	static std::vector<TensorCL> VALUE_TAPE;
+	static std::vector<OPERATION> OPERATION_TAPE;
+	static std::vector< std::pair<int, int> > PARENTS_TAPE;
 };
 
