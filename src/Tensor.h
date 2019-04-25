@@ -1,17 +1,10 @@
 #include <CL_TENSOR.h>
-
+#include <map>
 
 //TensorCL wrapper with automatic differentiation
 class Tensor
 {
 public:
-	Tensor(TensorCL input);
-	~Tensor();
-
-	void CLEAR_TAPE();
-
-private:
-
 	enum OPERATION
 	{
 		NONE,
@@ -22,13 +15,64 @@ private:
 		TRANSPOSE, DOT
 	};
 
+	Tensor(int x = 1, int y = 1, int z = 1, int w = 1);
+	Tensor(cl_tensor param);
+	Tensor(TensorCL input, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
+	
+	~Tensor();
+
+	Tensor(Tensor & X);
+
+	Tensor& operator=(Tensor &X);
+	Tensor& operator=(float a);
+
+	Tensor operator+(Tensor &X);
+	Tensor operator-(Tensor &X);
+	Tensor operator*(Tensor &X);
+	Tensor operator/(Tensor &X);
+
+	Tensor operator+(float x);
+	Tensor operator-(float x);
+	Tensor operator-();
+	Tensor operator*(float x);
+	Tensor operator/(float x);
+
+	Tensor sin();
+	Tensor cos();
+	Tensor tan();
+	Tensor exp();
+	Tensor log();
+	Tensor tanh();
+	Tensor operator^(float y); //power
+
+	Tensor sum();
+	Tensor min(Tensor &X);
+	Tensor max(Tensor &X);
+	Tensor min(float y = 0.f);
+	Tensor max(float y = 0.f);
+
+	Tensor indicies(int dim);
+	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
+	Tensor transpose(int dim_a = 0, int dim_b = 1);
+	Tensor repeat(int xn = 1, int yn = 1, int zn = 1, int wn = 1);
+
+	Tensor dot(Tensor &X); //dot product, last dimension of this and second to last dimension of X
+
+	Tensor Derivative_WRT(Tensor& wrt);
+
+private:
+	std::vector<int> FindChilds(int id);
+	void RecursiveDestruction(int id);
+	void init(TensorCL & X, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
+
 	//the id of this element inside the tape
 	int tape_id;
+	std::vector<int> old_ids;
 
 	// operation trees/recording tape
 	// only one instance exists
-	static std::vector<TensorCL> VALUE_TAPE;
-	static std::vector<OPERATION> OPERATION_TAPE;
-	static std::vector< std::pair<int, int> > PARENTS_TAPE;
+	static std::map<int, TensorCL> VALUE_TAPE;
+	static std::map<int, OPERATION> OPERATION_TAPE;
+	static std::map<int, std::pair<int, int> > PARENTS_TAPE;
 };
 
