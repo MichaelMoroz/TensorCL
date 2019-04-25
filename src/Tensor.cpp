@@ -28,9 +28,9 @@ Tensor::Tensor(TensorCL input, std::pair<int, int> parents, OPERATION op)
 void Tensor::init(TensorCL  X, std::pair<int, int> parents, OPERATION op)
 {
 	tape_id = idt;
-	VALUE_TAPE.insert(std::pair <int, TensorCL>(idt, X));
-	OPERATION_TAPE.insert(std::pair <int, OPERATION>(idt, op));
-	PARENTS_TAPE.insert(std::pair <int, std::pair<int, int>>(idt, parents));
+	VALUE_TAPE.emplace(idt, X);
+	OPERATION_TAPE.emplace(idt, op);
+	PARENTS_TAPE.emplace(idt, parents);
 	idt++;
 }
 

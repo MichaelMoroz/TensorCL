@@ -19,17 +19,16 @@ int main(int argc, char *argv[]) {
 		B = indicies(B, 1) + 1 + indicies(B, 2);
 		PrintTensor(B);
 
+		
+
 		TensorCL DOT = dot(A, B);
 
-		
-		
-
-		PrintTensor(DOT);
-		PrintTensor(sum(sum(sum(transpose(DOT,0,2)))));
-
 		Tensor TEST(DOT);
+		TEST = 5.f;
 		PrintTensor(TEST.GetTensor());
 
+		PrintTensor(DOT);
+		PrintTensor(sum(sum(sum(transpose(DOT, 0, 2)))));
 		
 	}
 	
