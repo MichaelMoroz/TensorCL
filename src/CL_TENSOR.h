@@ -33,7 +33,7 @@ cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 
 cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b);
 cl_tensor GetSumTensor(cl_tensor x);
-cl_tensor Repeat(cl_tensor x); //TODO
+cl_tensor Repeat(cl_tensor x, int xn, int yn, int zn, int wn); //TODO
 void TensorUseOpenCL(OpenCL* cl);
 
 class TensorCL

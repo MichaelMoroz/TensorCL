@@ -387,7 +387,7 @@ cl_tensor GetSumTensor(cl_tensor x)
 	return x;
 }
 
-cl_tensor Repeat(cl_tensor x)
+cl_tensor Repeat(cl_tensor x, int xn, int yn, int zn, int wn)
 {
 	return cl_tensor();
 }

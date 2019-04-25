@@ -37,7 +37,7 @@ public:
 	Tensor operator*(float x);
 	Tensor operator/(float x);
 
-	Tensor sin();
+	/*Tensor sin();
 	Tensor cos();
 	Tensor tan();
 	Tensor exp();
@@ -58,21 +58,17 @@ public:
 
 	Tensor dot(Tensor &X); //dot product, last dimension of this and second to last dimension of X
 
-	Tensor Derivative_WRT(Tensor& wrt);
+	Tensor Derivative_WRT(Tensor& wrt);*/
+
+	TensorCL& GetTensor();
 
 private:
 	std::vector<int> FindChilds(int id);
 	void RecursiveDestruction(int id);
-	void init(TensorCL & X, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
+	void init(TensorCL X, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
 
 	//the id of this element inside the tape
 	int tape_id;
 	std::vector<int> old_ids;
-
-	// operation trees/recording tape
-	// only one instance exists
-	static std::map<int, TensorCL> VALUE_TAPE;
-	static std::map<int, OPERATION> OPERATION_TAPE;
-	static std::map<int, std::pair<int, int> > PARENTS_TAPE;
 };
 

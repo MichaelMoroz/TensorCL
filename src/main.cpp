@@ -1,5 +1,5 @@
 #include <SFML_plot.h>
-#include <CL_TENSOR.h>
+#include <Tensor.h>
 
 using namespace std;
 
@@ -21,8 +21,16 @@ int main(int argc, char *argv[]) {
 
 		TensorCL DOT = dot(A, B);
 
+		
+		
+
 		PrintTensor(DOT);
 		PrintTensor(sum(sum(sum(transpose(DOT,0,2)))));
+
+		Tensor TEST(DOT);
+		PrintTensor(TEST.GetTensor());
+
+		
 	}
 	
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);

@@ -3,6 +3,11 @@
 #include <vector>
 
 int idt = 0;
+// operation trees/recording tape
+// only one instance exists
+std::map<int, TensorCL> VALUE_TAPE;
+std::map<int, Tensor::OPERATION> OPERATION_TAPE;
+std::map<int, std::pair<int, int> > PARENTS_TAPE;
 
 Tensor::Tensor(int x, int y, int z, int w)
 {
@@ -20,13 +25,18 @@ Tensor::Tensor(TensorCL input, std::pair<int, int> parents, OPERATION op)
 	init(input, parents, op);
 }
 
-void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
+void Tensor::init(TensorCL  X, std::pair<int, int> parents, OPERATION op)
 {
 	tape_id = idt;
-	VALUE_TAPE[idt] = X;
-	OPERATION_TAPE[idt] = op;
-	PARENTS_TAPE[idt] = parents;
+	VALUE_TAPE.insert(std::pair <int, TensorCL>(idt, X));
+	OPERATION_TAPE.insert(std::pair <int, OPERATION>(idt, op));
+	PARENTS_TAPE.insert(std::pair <int, std::pair<int, int>>(idt, parents));
 	idt++;
+}
+
+TensorCL& Tensor::GetTensor()
+{
+	return VALUE_TAPE[tape_id];
 }
 
 //it's slow, but whatever
@@ -103,6 +113,7 @@ Tensor & Tensor::operator=(float a)
 	C = a;
 	old_ids.push_back(tape_id);
 	init(C);
+	return *this;
 }
 
 Tensor Tensor::operator+(Tensor & X)
