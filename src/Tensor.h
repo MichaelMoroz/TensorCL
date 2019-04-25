@@ -1,5 +1,6 @@
 #include <CL_TENSOR.h>
 #include <map>
+#include <string>
 
 //TensorCL wrapper with automatic differentiation
 class Tensor
@@ -17,7 +18,7 @@ public:
 
 	Tensor(int x = 1, int y = 1, int z = 1, int w = 1);
 	Tensor(cl_tensor param);
-	Tensor(TensorCL input, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
+	Tensor(TensorCL& input, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
 	
 	~Tensor();
 
@@ -65,10 +66,12 @@ public:
 private:
 	std::vector<int> FindChilds(int id);
 	void RecursiveDestruction(int id);
-	void init(TensorCL X, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
+	void init(TensorCL &X, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
 
 	//the id of this element inside the tape
 	int tape_id;
 	std::vector<int> old_ids;
 };
 
+
+void PrintTAPE();

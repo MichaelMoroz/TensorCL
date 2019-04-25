@@ -107,7 +107,7 @@ TensorCL& TensorCL::operator=(TensorCL & X)
 {
 	param = X.param;
 	init_data();
-	clEnqueueCopyBuffer(CL->queue(), data, X.data, 0, 0, param.length * sizeof(float), NULL, NULL, NULL);
+	clEnqueueCopyBuffer(CL->queue(), X.data, data, 0, 0, param.length * sizeof(float), NULL, NULL, NULL);
 	CL->queue.flush();
 	return *this;
 }

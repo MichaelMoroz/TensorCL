@@ -19,17 +19,15 @@ int main(int argc, char *argv[]) {
 		B = indicies(B, 1) + 1 + indicies(B, 2);
 		PrintTensor(B);
 
-		
-
 		TensorCL DOT = dot(A, B);
 
 		Tensor TEST(DOT);
-		TEST = 5.f;
+		TEST = TEST*TEST + TEST;
 		PrintTensor(TEST.GetTensor());
 
 		PrintTensor(DOT);
 		PrintTensor(sum(sum(sum(transpose(DOT, 0, 2)))));
-		
+		PrintTAPE();
 	}
 	
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);

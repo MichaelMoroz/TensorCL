@@ -20,15 +20,15 @@ Tensor::Tensor(cl_tensor param)
 }
 
 
-Tensor::Tensor(TensorCL input, std::pair<int, int> parents, OPERATION op)
+Tensor::Tensor(TensorCL & input, std::pair<int, int> parents, OPERATION op)
 {
 	init(input, parents, op);
 }
 
-void Tensor::init(TensorCL  X, std::pair<int, int> parents, OPERATION op)
+void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 {
 	tape_id = idt;
-	VALUE_TAPE.emplace(idt, X);
+	VALUE_TAPE[idt] = X;
 	OPERATION_TAPE.emplace(idt, op);
 	PARENTS_TAPE.emplace(idt, parents);
 	idt++;
@@ -159,4 +159,74 @@ Tensor Tensor::operator*(float x)
 Tensor Tensor::operator/(float x)
 {
 	return Tensor(VALUE_TAPE[this->tape_id] / x, std::pair<int, int>(this->tape_id, -1), DIV_N);
+}
+
+std::string getOperationName(Tensor::OPERATION op)
+{
+	switch (op)
+	{
+	case Tensor::NONE:
+		return "NONE";
+	case Tensor::ADD_T:
+		return "ADD_TENSORS";
+	case Tensor::SUBS_T:
+		return "SUBSTRACT_TENSORS";
+	case Tensor::MUL_T:
+		return "MULTIPLY_TENSORS";
+	case Tensor::DIV_T:
+		return "DIVIDE_TENSORS";
+	case Tensor::NEG:
+		return "NEGATE";
+	case Tensor::ADD_N:
+		return "ADD_NUMBER";
+	case Tensor::SUBS_N:
+		return "SUBSTRACT_NUMBER";
+	case Tensor::MUL_N:
+		return "MULTIPLY_NUMBER";
+	case Tensor::DIV_N:
+		return "DIVIDE_NUMBER";
+	case Tensor::SIN:
+		return "SIN";
+	case Tensor::COS:
+		return "COS";
+	case Tensor::TAN:
+		return "EXP";
+	case Tensor::LOG:
+		return "LOG";
+	case Tensor::TANH:
+		return "TANH";
+	case Tensor::POW:
+		return "POW";
+	case Tensor::SUM:
+		return "SUM";
+	case Tensor::MIN_M:
+		return "MIN_M";
+	case Tensor::MAX_M:
+		return "MAX_M";
+	case Tensor::MIN_N:
+		return "MIN_N";
+	case Tensor::MAX_N:
+		return "MAX_N";
+	case Tensor::TRANSPOSE:
+		return "TRANSPOSE";
+	case Tensor::DOT:
+		return "DOT";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+void PrintTAPE()
+{
+	std::cout << "TAPE:" << std::endl;
+	auto it = PARENTS_TAPE.begin();
+	auto it2 = OPERATION_TAPE.begin();
+	auto i = 0;
+	// Iterate through the map
+	while (it != PARENTS_TAPE.end())
+	{
+		std::cout <<"Record_" <<i << " :: " << it->second.first << " * " << it->second.second << " " << getOperationName(it2->second) << std::endl;
+		it++; it2++;
+		i++;
+	}
 }
