@@ -13,7 +13,7 @@ public:
 		ADD_N, SUBS_N, MUL_N, DIV_N,
 		SIN, COS, TAN, EXP, LOG, TANH, POW,
 		SUM, MIN_M, MAX_M, MIN_N, MAX_N,
-		TRANSPOSE, DOT
+		TRANSPOSE, DOT, REPEAT
 	};
 
 	Tensor(int x = 1, int y = 1, int z = 1, int w = 1);
@@ -38,7 +38,7 @@ public:
 	Tensor operator*(float x);
 	Tensor operator/(float x);
 
-	/*Tensor sin();
+	Tensor sin();
 	Tensor cos();
 	Tensor tan();
 	Tensor exp();
@@ -59,7 +59,7 @@ public:
 
 	Tensor dot(Tensor &X); //dot product, last dimension of this and second to last dimension of X
 
-	Tensor Derivative_WRT(Tensor& wrt);*/
+	Tensor Derivative_WRT(Tensor& wrt);
 
 	TensorCL& GetTensor();
 
@@ -74,4 +74,31 @@ private:
 };
 
 
-void PrintTAPE();
+void PrintTAPE(bool disp_value);
+
+
+
+Tensor operator+(float x, Tensor& Y);
+Tensor operator-(float x, Tensor& Y);
+Tensor operator*(float x, Tensor& Y);
+Tensor operator/(float x, Tensor& Y);
+
+Tensor sin(Tensor& X);
+Tensor cos(Tensor& X);
+Tensor tan(Tensor& X);
+Tensor exp(Tensor& X);
+Tensor log(Tensor& X);
+Tensor sum(Tensor& X);
+Tensor tanh(Tensor& X);
+
+Tensor min(Tensor &X, Tensor& Y);
+Tensor max(Tensor &X, Tensor& Y);
+Tensor min(Tensor& X, float y = 0.f);
+Tensor max(Tensor& X, float y = 0.f);
+Tensor min(float y, Tensor& X);
+Tensor max(float y, Tensor& X);
+
+Tensor dot(Tensor& X, Tensor& Y);
+Tensor indicies(Tensor& X, int dim = 0);
+Tensor repeat(Tensor& X, int xn = 1, int yn = 1, int zn = 1, int wn = 1);
+Tensor transpose(Tensor& X, int dim_a = 0, int dim_b = 1);

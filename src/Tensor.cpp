@@ -8,6 +8,9 @@ int idt = 0;
 std::map<int, TensorCL> VALUE_TAPE;
 std::map<int, Tensor::OPERATION> OPERATION_TAPE;
 std::map<int, std::pair<int, int> > PARENTS_TAPE;
+std::map<int, float> FLOAT_TAPE;
+std::map<int, std::pair<int, int> > TRANSPOSE_TAPE;
+std::map<int, std::vector<int> > REPEAT_TAPE;
 
 Tensor::Tensor(int x, int y, int z, int w)
 {
@@ -32,6 +35,102 @@ void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 	OPERATION_TAPE.emplace(idt, op);
 	PARENTS_TAPE.emplace(idt, parents);
 	idt++;
+}
+
+Tensor Tensor::sin()
+{
+	return Tensor(VALUE_TAPE[this->tape_id].sin(), std::pair<int, int>(this->tape_id, -1), SIN);
+}
+
+Tensor Tensor::cos()
+{
+	return Tensor(VALUE_TAPE[this->tape_id].cos(), std::pair<int, int>(this->tape_id, -1), COS);
+}
+
+Tensor Tensor::tan()
+{
+	return Tensor(VALUE_TAPE[this->tape_id].tan(), std::pair<int, int>(this->tape_id, -1), TAN);
+}
+
+Tensor Tensor::exp()
+{
+	return Tensor(VALUE_TAPE[this->tape_id].exp(), std::pair<int, int>(this->tape_id, -1), EXP);
+}
+
+Tensor Tensor::log()
+{
+	return Tensor(VALUE_TAPE[this->tape_id].log(), std::pair<int, int>(this->tape_id, -1), LOG);
+}
+
+Tensor Tensor::tanh()
+{
+	return Tensor(VALUE_TAPE[this->tape_id].tanh(), std::pair<int, int>(this->tape_id, -1), TANH);
+}
+
+Tensor Tensor::operator^(float y)
+{
+	FLOAT_TAPE[idt] = y;
+	return Tensor(VALUE_TAPE[this->tape_id]^y, std::pair<int, int>(this->tape_id, -1), POW);
+}
+
+Tensor Tensor::sum()
+{
+	return Tensor(VALUE_TAPE[this->tape_id].sum(), std::pair<int, int>(this->tape_id, -1), SUM);
+}
+
+Tensor Tensor::min(Tensor & X)
+{
+	return Tensor(VALUE_TAPE[this->tape_id].min(VALUE_TAPE[X.tape_id]), std::pair<int, int>(this->tape_id, X.tape_id), MIN_M);
+}
+
+Tensor Tensor::max(Tensor & X)
+{
+	return Tensor(VALUE_TAPE[this->tape_id].max(VALUE_TAPE[X.tape_id]), std::pair<int, int>(this->tape_id, X.tape_id), MAX_M);
+}
+
+Tensor Tensor::min(float y)
+{
+	FLOAT_TAPE[idt] = y;
+	return Tensor(VALUE_TAPE[this->tape_id].min(y), std::pair<int, int>(this->tape_id, -1), MIN_N);
+}
+
+Tensor Tensor::max(float y)
+{
+	FLOAT_TAPE[idt] = y;
+	return Tensor(VALUE_TAPE[this->tape_id].max(y), std::pair<int, int>(this->tape_id, -1), MAX_N);
+}
+
+Tensor Tensor::indicies(int dim)
+{
+	return Tensor(VALUE_TAPE[this->tape_id].indicies(dim), std::pair<int, int>(this->tape_id, -1), NONE);
+}
+
+void Tensor::reshape(int x, int y, int z, int w)
+{
+	//TODO
+}
+
+Tensor Tensor::transpose(int dim_a, int dim_b)
+{
+	TRANSPOSE_TAPE[idt] = std::pair<int,int>(dim_a,dim_b);
+	return Tensor(VALUE_TAPE[this->tape_id].transpose(dim_a,dim_b), std::pair<int, int>(this->tape_id, -1), TRANSPOSE);
+}
+
+Tensor Tensor::repeat(int xn, int yn, int zn, int wn)
+{
+	std::vector<int> idx = { xn, yn, zn, wn };
+	REPEAT_TAPE[idt] = idx;
+	return Tensor(VALUE_TAPE[this->tape_id].repeat(xn,yn,zn,wn), std::pair<int, int>(this->tape_id, -1), REPEAT);
+}
+
+Tensor Tensor::dot(Tensor & X)
+{
+	return Tensor(VALUE_TAPE[this->tape_id].dot(VALUE_TAPE[X.tape_id]), std::pair<int, int>(this->tape_id, X.tape_id), DOT);
+}
+
+Tensor Tensor::Derivative_WRT(Tensor & wrt)
+{
+	return Tensor();
 }
 
 TensorCL& Tensor::GetTensor()
@@ -138,11 +237,13 @@ Tensor Tensor::operator/(Tensor & X)
 
 Tensor Tensor::operator+(float x)
 {
+	FLOAT_TAPE[idt] = x;
 	return Tensor(VALUE_TAPE[this->tape_id] + x, std::pair<int, int>(this->tape_id, -1), ADD_N);
 }
 
 Tensor Tensor::operator-(float x)
 {
+	FLOAT_TAPE[idt] = x;
 	return Tensor(VALUE_TAPE[this->tape_id] - x, std::pair<int, int>(this->tape_id, -1), SUBS_N);
 }
 
@@ -153,11 +254,13 @@ Tensor Tensor::operator-()
 
 Tensor Tensor::operator*(float x)
 {
+	FLOAT_TAPE[idt] = x;
 	return Tensor(VALUE_TAPE[this->tape_id] * x, std::pair<int, int>(this->tape_id, -1), MUL_N);
 }
 
 Tensor Tensor::operator/(float x)
 {
+	FLOAT_TAPE[idt] = x;
 	return Tensor(VALUE_TAPE[this->tape_id] / x, std::pair<int, int>(this->tape_id, -1), DIV_N);
 }
 
@@ -211,22 +314,136 @@ std::string getOperationName(Tensor::OPERATION op)
 		return "TRANSPOSE";
 	case Tensor::DOT:
 		return "DOT";
+	case Tensor::REPEAT:
+		return "REPEAT";
 	default:
 		return "UNKNOWN";
 	}
 }
 
-void PrintTAPE()
+void PrintTAPE(bool disp_value)
 {
 	std::cout << "TAPE:" << std::endl;
 	auto it = PARENTS_TAPE.begin();
 	auto it2 = OPERATION_TAPE.begin();
+	auto it3 = VALUE_TAPE.begin();
 	auto i = 0;
 	// Iterate through the map
 	while (it != PARENTS_TAPE.end())
 	{
 		std::cout <<"Record_" <<i << " :: " << it->second.first << " * " << it->second.second << " " << getOperationName(it2->second) << std::endl;
-		it++; it2++;
+		if (disp_value)
+		{
+			PrintTensor(it3->second);
+		}
+		it++; it2++; it3++;
 		i++;
 	}
 }
+
+Tensor operator+(float x, Tensor & Y)
+{
+	return Y + x;
+}
+
+Tensor operator-(float x, Tensor & Y)
+{
+	return -Y + x;
+}
+
+Tensor operator*(float x, Tensor & Y)
+{
+	return Y * x;
+}
+
+Tensor operator/(float x, Tensor & Y)
+{
+	return Y / x;
+}
+
+Tensor sin(Tensor & X)
+{
+	return X.sin();
+}
+
+Tensor cos(Tensor & X)
+{
+	return X.cos();
+}
+
+Tensor tan(Tensor & X)
+{
+	return X.tan();
+}
+
+Tensor exp(Tensor & X)
+{
+	return X.exp();
+}
+
+Tensor log(Tensor & X)
+{
+	return X.log();
+}
+
+
+Tensor tanh(Tensor & X)
+{
+	return X.tanh();
+}
+
+Tensor sum(Tensor & X)
+{
+	return X.sum();
+}
+
+Tensor min(Tensor & X, Tensor & Y)
+{
+	return X.min(Y);
+}
+
+Tensor max(Tensor & X, Tensor & Y)
+{
+	return X.max(Y);
+}
+
+Tensor min(Tensor & X, float y)
+{
+	return X.min(y);
+}
+
+Tensor max(Tensor & X, float y)
+{
+	return X.max(y);
+}
+
+Tensor min(float y, Tensor & X)
+{
+	return X.max(y);
+}
+
+Tensor max(float y, Tensor & X)
+{
+	return X.min(y);
+}
+
+Tensor dot(Tensor & X, Tensor & Y)
+{
+	return X.dot(Y);
+}
+
+Tensor indicies(Tensor & X, int dim)
+{
+	return  X.indicies(dim);
+}
+
+Tensor repeat(Tensor & X, int xn, int yn, int zn, int wn)
+{
+	return X.repeat(xn, yn, zn, wn);
+}
+
+Tensor transpose(Tensor & X, int dim_a, int dim_b)
+{
+	return X.transpose(dim_a, dim_b);
+}
+

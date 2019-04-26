@@ -22,14 +22,13 @@ int main(int argc, char *argv[]) {
 		TensorCL DOT = dot(A, B);
 
 		Tensor TEST(DOT);
-		TEST = TEST*TEST + TEST;
-		PrintTensor(TEST.GetTensor());
+		Tensor KEK = sin(TEST*TEST + TEST);
+		PrintTensor(KEK.GetTensor());
 
 		PrintTensor(DOT);
 		PrintTensor(sum(sum(sum(transpose(DOT, 0, 2)))));
-		PrintTAPE();
+		PrintTAPE(false);
 	}
-	
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
 	font.loadFromFile("arialbd.ttf");
 	int i = 0;
