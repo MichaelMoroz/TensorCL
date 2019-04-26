@@ -13,7 +13,7 @@ public:
 		ADD_N, SUBS_N, MUL_N, DIV_N,
 		SIN, COS, TAN, EXP, LOG, TANH, POW,
 		SUM, MIN_M, MAX_M, MIN_N, MAX_N,
-		TRANSPOSE, DOT, REPEAT
+		TRANSPOSE, DOT, REPEAT, GET_INDEX
 	};
 
 	Tensor(int x = 1, int y = 1, int z = 1, int w = 1);
@@ -23,8 +23,10 @@ public:
 	~Tensor();
 
 	Tensor(Tensor & X);
+	Tensor(Tensor && X);
 
 	Tensor& operator=(Tensor &X);
+	Tensor& operator=(Tensor &&X);
 	Tensor& operator=(float a);
 
 	Tensor operator+(Tensor &X);

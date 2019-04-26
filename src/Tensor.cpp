@@ -102,7 +102,8 @@ Tensor Tensor::max(float y)
 
 Tensor Tensor::indicies(int dim)
 {
-	return Tensor(VALUE_TAPE[this->tape_id].indicies(dim), std::pair<int, int>(this->tape_id, -1), NONE);
+	Tensor C(VALUE_TAPE[this->tape_id].indicies(dim), std::pair<int,int>(this->tape_id,-1), GET_INDEX);
+	return C;
 }
 
 void Tensor::reshape(int x, int y, int z, int w)
@@ -200,9 +201,26 @@ Tensor::Tensor(Tensor & X)
 	tape_id = X.tape_id;
 }
 
+Tensor::Tensor(Tensor && X)
+{
+	tape_id = X.tape_id;
+	X.tape_id = -100;
+	old_ids = X.old_ids;
+	X.old_ids.clear();
+}
+
 Tensor & Tensor::operator=(Tensor & X)
 {
 	tape_id = X.tape_id;
+	return *this;
+}
+
+Tensor & Tensor::operator=(Tensor && X)
+{
+	tape_id = X.tape_id;
+	X.tape_id = -100;
+	old_ids = X.old_ids;
+	X.old_ids.clear();
 	return *this;
 }
 
