@@ -75,7 +75,7 @@ private:
 
 
 void PrintTAPE(bool disp_value);
-
+void PrintTensor(Tensor& a);
 
 
 Tensor operator+(float x, Tensor& Y);

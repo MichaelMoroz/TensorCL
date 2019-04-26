@@ -12,21 +12,17 @@ int main(int argc, char *argv[]) {
 	{
 		TensorUseOpenCL(&cl);
 
-		TensorCL A(3, 5), B(5, 2, 2);
+		Tensor A(3, 5), B(5, 2, 2);
 
 		A = indicies(A, 0) + 1;
 		PrintTensor(A);
 		B = indicies(B, 1) + 1 + indicies(B, 2);
 		PrintTensor(B);
 
-		TensorCL DOT = dot(A, B);
-
-		Tensor TEST(DOT);
-		Tensor KEK = sin(TEST*TEST + TEST);
-		PrintTensor(KEK.GetTensor());
+		Tensor DOT = dot(A, B);
 
 		PrintTensor(DOT);
-		PrintTensor(sum(sum(sum(transpose(DOT, 0, 2)))));
+		PrintTensor(transpose(DOT, 0, 2));
 		PrintTAPE(false);
 	}
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);

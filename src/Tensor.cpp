@@ -341,6 +341,11 @@ void PrintTAPE(bool disp_value)
 	}
 }
 
+void PrintTensor(Tensor & a)
+{
+	PrintTensor(a.GetTensor());
+}
+
 Tensor operator+(float x, Tensor & Y)
 {
 	return Y + x;
