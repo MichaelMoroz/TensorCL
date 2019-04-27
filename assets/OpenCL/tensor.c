@@ -74,6 +74,57 @@ __kernel void tensor_mul( __global float* C,
 		C[i] = pow(A[i], a)*pow(B[i], b);
 }
 
+__kernel void tensor_less_m(__global float* C,
+	const __global float* A,
+	const __global float* B,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = A[i] < B[i];
+}
+
+__kernel void tensor_more_m(__global float* C,
+	const __global float* A,
+	const __global float* B,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = A[i] > B[i];
+}
+
+__kernel void tensor_less_n(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const float a)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = A[i] < a;
+}
+
+__kernel void tensor_more_n(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const float a)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = A[i] > a;
+}
+
+__kernel void tensor_if(__global float* C,
+	const __global float* COND,
+	const __global float* TRUE,
+	const __global float* FALSE,
+	const cl_tensor Cdata)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = ((bool)COND[i])?TRUE[i]:FALSE[i];
+}
+
 __kernel void tensor_index(__global float* C,
 					const cl_tensor Cdata,
 					int dim)
@@ -208,6 +259,17 @@ __kernel void tensor_transpose(__global float* C,
 	const int i = get_global_id(0);
 	if (i < Cdata.length)
 		C[i] = A[ID(transpose(get_index(i, Cdata), dim_a, dim_b), Adata)];
+}
+
+__kernel void tensor_repeat(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const cl_tensor Adata,
+	const int n)
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = A[ID(get_index(i, Cdata), Adata)];
 }
 
 __kernel void tensor_sum(__global float* C,

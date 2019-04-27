@@ -33,7 +33,7 @@ cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 
 cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b);
 cl_tensor GetSumTensor(cl_tensor x);
-cl_tensor Repeat(cl_tensor x, int xn, int yn, int zn, int wn); //TODO
+cl_tensor Repeat(cl_tensor x, int n); 
 void TensorUseOpenCL(OpenCL* cl);
 
 class TensorCL
@@ -44,6 +44,7 @@ public:
 	TensorCL(cl_tensor p);
 
 	TensorCL(TensorCL & X);
+	TensorCL(TensorCL & X, float fill);
 	TensorCL(TensorCL&& X);
 
 	TensorCL& operator=(TensorCL &X);
@@ -55,11 +56,17 @@ public:
 	TensorCL operator*(TensorCL &X);
 	TensorCL operator/(TensorCL &X);
 
+
 	TensorCL operator+(float x);
 	TensorCL operator-(float x);
 	TensorCL operator-();
 	TensorCL operator*(float x);
 	TensorCL operator/(float x);
+
+	TensorCL operator>(TensorCL &X);
+	TensorCL operator<(TensorCL &X);
+	TensorCL operator>(float x);
+	TensorCL operator<(float x);
 
 	TensorCL sin();
 	TensorCL cos();
@@ -75,10 +82,11 @@ public:
 	TensorCL min(float y = 0.f);
 	TensorCL max(float y = 0.f);
 
+	TensorCL _if (TensorCL & _true, TensorCL & _false);
 	TensorCL indicies(int dim);
 	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
 	TensorCL transpose(int dim_a = 0, int dim_b = 1);
-	TensorCL repeat(int xn = 1, int yn = 1, int zn = 1, int wn = 1);
+	TensorCL repeat(int n);
 
 	TensorCL dot(TensorCL &X); //dot product, last dimension of this and second to last dimension of X
 	
@@ -92,7 +100,7 @@ public:
 	~TensorCL();
 
 private:
-	void init_data();
+	void init_data(float value = 0.f);
 	TensorCL MAD(float a, float b); //multiplication and addition
 
 	cl_tensor param;
@@ -109,6 +117,8 @@ TensorCL operator+(float x, TensorCL& Y);
 TensorCL operator-(float x, TensorCL& Y);
 TensorCL operator*(float x, TensorCL& Y);
 TensorCL operator/(float x, TensorCL& Y);
+TensorCL operator>(float x, TensorCL& Y);
+TensorCL operator<(float x, TensorCL& Y);
 
 TensorCL sin(TensorCL& X);
 TensorCL cos(TensorCL& X);
@@ -127,5 +137,10 @@ TensorCL max(float y, TensorCL& X);
 
 TensorCL dot(TensorCL& X, TensorCL& Y);
 TensorCL indicies(TensorCL& X, int dim = 0);
-TensorCL repeat(TensorCL& X, int xn = 1, int yn = 1, int zn = 1, int wn = 1);
+TensorCL repeat(TensorCL& X, int n = 1);
 TensorCL transpose(TensorCL& X, int dim_a = 0, int dim_b = 1);
+
+TensorCL _if(TensorCL& _cond, TensorCL& _true, TensorCL& _false);
+TensorCL _if(TensorCL& _cond, TensorCL& _true, float _false);
+TensorCL _if(TensorCL& _cond, float _true, TensorCL& _false);
+TensorCL _if(TensorCL& _cond, float _true, float _false);

@@ -13,13 +13,16 @@ public:
 		ADD_N, SUBS_N, MUL_N, DIV_N,
 		SIN, COS, TAN, EXP, LOG, TANH, POW,
 		SUM, MIN_M, MAX_M, MIN_N, MAX_N,
-		TRANSPOSE, DOT, REPEAT, GET_INDEX
+		MORE_M, LESS_M, MORE_N, LESS_N,
+		TRANSPOSE, DOT, REPEAT, GET_INDEX, IF_COND
 	};
 
-	Tensor(int x = 1, int y = 1, int z = 1, int w = 1);
+	Tensor(unsigned int x = 1, unsigned int y = 1, unsigned int z = 1, unsigned int w = 1);
 	Tensor(cl_tensor param);
 	Tensor(TensorCL& input, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
-	
+	Tensor(int id);
+	Tensor(Tensor& x, float fill);
+
 	~Tensor();
 
 	Tensor(Tensor & X);
@@ -40,6 +43,11 @@ public:
 	Tensor operator*(float x);
 	Tensor operator/(float x);
 
+	Tensor operator>(Tensor &X);
+	Tensor operator<(Tensor &X);
+	Tensor operator>(float x);
+	Tensor operator<(float x);
+
 	Tensor sin();
 	Tensor cos();
 	Tensor tan();
@@ -57,13 +65,15 @@ public:
 	Tensor indicies(int dim);
 	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
 	Tensor transpose(int dim_a = 0, int dim_b = 1);
-	Tensor repeat(int xn = 1, int yn = 1, int zn = 1, int wn = 1);
+	Tensor repeat(int n = 1);
+
+	Tensor _if(Tensor & _true, float _false);
 
 	Tensor dot(Tensor &X); //dot product, last dimension of this and second to last dimension of X
 
-	Tensor Derivative_WRT(Tensor& wrt);
-
 	TensorCL& GetTensor();
+
+	int ID();
 
 private:
 	std::vector<int> FindChilds(int id);
@@ -84,6 +94,8 @@ Tensor operator+(float x, Tensor& Y);
 Tensor operator-(float x, Tensor& Y);
 Tensor operator*(float x, Tensor& Y);
 Tensor operator/(float x, Tensor& Y);
+Tensor operator>(float x, Tensor& Y);
+Tensor operator<(float x, Tensor& Y);
 
 Tensor sin(Tensor& X);
 Tensor cos(Tensor& X);
@@ -102,5 +114,24 @@ Tensor max(float y, Tensor& X);
 
 Tensor dot(Tensor& X, Tensor& Y);
 Tensor indicies(Tensor& X, int dim = 0);
-Tensor repeat(Tensor& X, int xn = 1, int yn = 1, int zn = 1, int wn = 1);
+Tensor repeat(Tensor& X, int n);
 Tensor transpose(Tensor& X, int dim_a = 0, int dim_b = 1);
+
+Tensor _if(Tensor& _cond, Tensor& _true, float _false);
+
+//backpropagation class
+class Gradient
+{
+public:
+	Gradient(Tensor END);
+
+	Gradient(Gradient& A);
+	Gradient& operator=(Gradient &X);
+
+	//derivative with respect to
+	Tensor wrt(Tensor& X);
+private:
+	void ComputeDerivative(int parent_id, int child_id);
+
+	std::map<int, int> dydx;
+};

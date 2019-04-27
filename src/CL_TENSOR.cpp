@@ -2,6 +2,8 @@
 
 OpenCL *CL;
 CLFunction add, mul, mad, m_dot;
+CLFunction more_m, less_m;
+CLFunction more_n, less_n, if_cond;
 CLFunction idx, sinfun, cosfun, tanfun, tanhfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
 CLFunction expfun, logfun, transposefun, repeatfun;
 CLFunction sumfun;
@@ -20,7 +22,7 @@ TensorCL::~TensorCL()
 	release();
 }
 
-void TensorCL::init_data()
+void TensorCL::init_data(float value)
 {
 	param.length = 1;
 	for (int i = 0; i < param.rank; i++)
@@ -37,7 +39,6 @@ void TensorCL::init_data()
 	}
 	else
 	{
-		float value = 0;
 		clEnqueueFillBuffer(CL->queue(), data, &value, sizeof(value), 0, param.length * sizeof(float), 0, 0, 0);
 	}
 
@@ -119,6 +120,12 @@ TensorCL::TensorCL(TensorCL &X)
 	init_data();
 	clEnqueueCopyBuffer(CL->queue(), data, X.data, 0, 0, param.length * sizeof(float), NULL, NULL, NULL);
 	CL->queue.flush();
+}
+
+TensorCL::TensorCL(TensorCL &X, float fill)
+{
+	param = X.param;
+	init_data(fill);
 }
 
 TensorCL TensorCL::operator+(TensorCL & X)
@@ -212,6 +219,46 @@ TensorCL TensorCL::operator/(TensorCL & X)
 	return *this;
 }
 
+TensorCL TensorCL::operator>(TensorCL & X)
+{
+	if (AreTensorsEqual(param, X.param))
+	{
+		TensorCL C(param); //create a temporary array
+		more_m.SetRange(CL->group_size[0], 1, param.length, 1);
+		more_m.SetArg(0, C.data); //result
+		more_m.SetArg(1, data);
+		more_m.SetArg(2, X.data);
+		more_m.SetArg(3, param);
+		more_m.RFlush();
+		return C;
+	}
+	else
+	{
+		ERROR_MSG("Incompatible tensors");
+	}
+	return *this;
+}
+
+TensorCL TensorCL::operator<(TensorCL & X)
+{
+	if (AreTensorsEqual(param, X.param))
+	{
+		TensorCL C(param); //create a temporary array
+		less_m.SetRange(CL->group_size[0], 1, param.length, 1);
+		less_m.SetArg(0, C.data); //result
+		less_m.SetArg(1, data);
+		less_m.SetArg(2, X.data);
+		less_m.SetArg(3, param);
+		less_m.RFlush();
+		return C;
+	}
+	else
+	{
+		ERROR_MSG("Incompatible tensors");
+	}
+	return *this;
+}
+
 TensorCL TensorCL::operator+(float x)
 {
 	return MAD(1.f, x);
@@ -235,6 +282,30 @@ TensorCL TensorCL::operator*(float x)
 TensorCL TensorCL::operator/(float x)
 {
 	return MAD(1.f/x, 0.f);
+}
+
+TensorCL TensorCL::operator>(float x)
+{
+	TensorCL C(param); //create a temporary array
+	more_n.SetRange(CL->group_size[0], 1, param.length, 1);
+	more_n.SetArg(0, C.data); //result
+	more_n.SetArg(1, data);
+	more_n.SetArg(2, param);
+	more_n.SetArg(3, x);
+	more_n.RFlush();
+	return C;
+}
+
+TensorCL TensorCL::operator<(float x)
+{
+	TensorCL C(param); //create a temporary array
+	less_n.SetRange(CL->group_size[0], 1, param.length, 1);
+	less_n.SetArg(0, C.data); //result
+	less_n.SetArg(1, data);
+	less_n.SetArg(2, param);
+	less_n.SetArg(3, x);
+	less_n.RFlush();
+	return C;
 }
 
 TensorCL TensorCL::sin()
@@ -387,9 +458,12 @@ cl_tensor GetSumTensor(cl_tensor x)
 	return x;
 }
 
-cl_tensor Repeat(cl_tensor x, int xn, int yn, int zn, int wn)
+cl_tensor Repeat(cl_tensor x, int n)
 {
-	return cl_tensor();
+	x.length = x.length * n;
+	x.size[x.rank] = n;
+	x.rank += 1;
+	return x;
 }
 
 void TensorUseOpenCL(OpenCL *cl)
@@ -413,6 +487,11 @@ void TensorUseOpenCL(OpenCL *cl)
 	sumfun.Initialize("tensor_sum", CL);
 	tanhfun.Initialize("tensor_tanh", CL);
 	repeatfun.Initialize("tensor_repeat", CL);
+	more_m.Initialize("tensor_more_m", CL);
+	less_m.Initialize("tensor_less_m", CL);
+	more_n.Initialize("tensor_more_n", CL);
+	less_n.Initialize("tensor_less_n", CL);
+	if_cond.Initialize("tensor_if", CL);
 }
 
 void PrintTensor(TensorCL & a)
@@ -514,6 +593,27 @@ TensorCL TensorCL::max(float y)
 	return C;
 }
 
+TensorCL TensorCL::_if(TensorCL & _true, TensorCL & _false)
+{
+	if (AreTensorsEqual(param, _true.param) && AreTensorsEqual(param, _false.param))
+	{
+		TensorCL C(param); //create a temporary array
+		if_cond.SetRange(CL->group_size[0], 1, param.length, 1);
+		if_cond.SetArg(0, C.data); //result
+		if_cond.SetArg(1, data);
+		if_cond.SetArg(2, _true.data);
+		if_cond.SetArg(3, _false.data);
+		if_cond.SetArg(4, param);
+		if_cond.RFlush();
+		return C;
+	}
+	else
+	{
+		ERROR_MSG("Incompatible tensors");
+	}
+	return *this;
+}
+
 TensorCL TensorCL::indicies(int dim)
 {
 	TensorCL C(GetParam());
@@ -544,18 +644,15 @@ TensorCL TensorCL::transpose(int dim_a, int dim_b)
 	return C;
 }
 
-TensorCL TensorCL::repeat(int xn, int yn, int zn, int wn)
+TensorCL TensorCL::repeat(int n)
 {
-	TensorCL C(Repeat(GetParam(), xn, yn, zn, wn));
+	TensorCL C(Repeat(GetParam(), n));
 	repeatfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	repeatfun.SetArg(0, C.data); //result
 	repeatfun.SetArg(1, data);
 	repeatfun.SetArg(2, C.GetParam());
 	repeatfun.SetArg(3, GetParam());
-	repeatfun.SetArg(4, xn);
-	repeatfun.SetArg(5, yn);
-	repeatfun.SetArg(6, zn);
-	repeatfun.SetArg(7, wn);
+	repeatfun.SetArg(4, n);
 	repeatfun.RFlush();
 	return C;
 }
@@ -625,6 +722,16 @@ TensorCL operator*(float x, TensorCL & Y)
 TensorCL operator/(float x, TensorCL & Y)
 {
 	return Y/x;
+}
+
+TensorCL operator>(float x, TensorCL & Y)
+{
+	return Y<x;
+}
+
+TensorCL operator<(float x, TensorCL & Y)
+{
+	return Y>x;
 }
 
 TensorCL sin(TensorCL & X)
@@ -703,13 +810,33 @@ TensorCL indicies(TensorCL & X, int dim)
 	return  X.indicies(dim);
 }
 
-TensorCL repeat(TensorCL & X, int xn, int yn, int zn, int wn)
+TensorCL repeat(TensorCL & X, int n)
 {
-	return X.repeat(xn, yn, zn, wn);
+	return X.repeat(n);
 }
 
 TensorCL transpose(TensorCL & X, int dim_a, int dim_b)
 {
 	return X.transpose(dim_a, dim_b);
+}
+
+TensorCL _if(TensorCL & _cond, TensorCL & _true, TensorCL & _false)
+{
+	return _cond._if(_true, _false);
+}
+
+TensorCL _if(TensorCL & _cond, TensorCL & _true, float _false)
+{
+	return _cond._if(_true, TensorCL(_cond,_false));
+}
+
+TensorCL _if(TensorCL & _cond, float _true, float _false)
+{
+	return _cond._if(TensorCL(_cond, _true), TensorCL(_cond, _false));
+}
+
+TensorCL _if(TensorCL & _cond, float _true, TensorCL & _false)
+{
+	return _cond._if(TensorCL(_cond, _true),  _false);
 }
 
