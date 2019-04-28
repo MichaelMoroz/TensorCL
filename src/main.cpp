@@ -12,20 +12,26 @@ int main(int argc, char *argv[]) {
 	{
 		TensorUseOpenCL(&cl);
 
-		Tensor A(2, 3);
+		Tensor A(3, 3), B(3, 3);
 
 		A = (indicies(A, 0) + 1 + indicies(A, 1))/10.f;
 		PrintTensor(A);
+		B = indicies(B, 1) + indicies(B, 0);
+		PrintTensor(B);
 
-		Tensor SIN = sin(A) + A*2.f;
+		Tensor SIN = sin(A) + B*0.5f;
 
 		PrintTensor(SIN);
 
-		Gradient dSIN(SIN);
+		Tensor DOT = sum(dot(SIN, B));
+		PrintTensor(DOT);
 
-		PrintTensor(dSIN.wrt(A));
+		Gradient dDOT(DOT);
 
-		PrintTAPE(true);
+		PrintTensor(dDOT.wrt(A));
+		PrintTensor(dDOT.wrt(B));
+
+		PrintTAPE(false);
 	}
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
 	font.loadFromFile("arialbd.ttf");

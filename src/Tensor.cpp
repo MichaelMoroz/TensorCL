@@ -1,6 +1,7 @@
 #pragma once
 #include <Tensor.h>
 #include <vector>
+#include <stack>
 
 int idt = 0;
 // operation trees/recording tape
@@ -521,6 +522,49 @@ Tensor _if(Tensor & _cond, Tensor & _true, float _false)
 	return _cond._if(_true,_false);
 }
 
+bool hasvisited(int id, std::map<int, bool> &visited)
+{
+	if (visited.count(id) != 0) //if exists
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+void toposort_recursive(int node, std::stack<int> &Stack, std::map<int, bool> &visited)
+{
+	visited[node] = true;
+
+	if (PARENTS_TAPE[node].first != -1 && !hasvisited(PARENTS_TAPE[node].first, visited))
+	{
+		toposort_recursive(PARENTS_TAPE[node].first, Stack, visited);
+	}
+
+	if (PARENTS_TAPE[node].second != -1 && !hasvisited(PARENTS_TAPE[node].second, visited))
+	{
+		toposort_recursive(PARENTS_TAPE[node].second, Stack, visited);
+	}
+
+	Stack.push(node);
+}
+
+std::vector<int> toposort(int end_node)
+{
+	std::stack<int> Stack;
+	std::map<int, bool> visited;
+	toposort_recursive(end_node, Stack, visited);
+	std::vector<int> sorted;
+	while (Stack.empty() == false)
+	{
+		sorted.push_back(Stack.top());
+		Stack.pop();
+	}
+	return sorted;
+}
+
 //Vector Jacobian product, aka backpropagation derivatives
 std::pair<int, int> VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 {
@@ -609,7 +653,29 @@ std::pair<int, int> VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 Gradient::Gradient(Tensor END)
 {
 	Tensor outgrad(END, 1.f); //initial gradient
-	ComputeDerivatives(END.ID(), outgrad.ID()); //Backpropagation
+
+	std::map<int, int> outgrads;
+	dydx[END.ID()] = outgrad.ID();
+	std::vector<int> sorted = toposort(END.ID());
+	
+	for (auto &node_id : sorted)
+	{
+		int grad_id = dydx[node_id];
+		if (OPERATION_TAPE[node_id] != Tensor::NONE)
+		{
+			std::pair<int, int> out_grads = VJP(grad_id, node_id, OPERATION_TAPE[node_id]);
+
+			if (out_grads.first >= 0) //if gradient available
+			{
+				AddDerivative(PARENTS_TAPE[node_id].first, out_grads.first);
+			}
+
+			if (out_grads.second >= 0)
+			{
+				AddDerivative(PARENTS_TAPE[node_id].second, out_grads.second);
+			}
+		}
+	}
 }
 
 Gradient::Gradient(Gradient & A)
@@ -635,27 +701,6 @@ Tensor Gradient::wrt(Tensor & X)
 	}	
 }
 
-
-
-void Gradient::ComputeDerivatives(int node_id, int grad_id)
-{
-	if (OPERATION_TAPE[node_id] != Tensor::NONE)
-	{
-		std::pair<int, int> out_grads = VJP(grad_id, node_id, OPERATION_TAPE[node_id]);
-
-		if (out_grads.first >= 0) //if gradient available
-		{
-			AddDerivative(PARENTS_TAPE[node_id].first, out_grads.first);
-			ComputeDerivatives(PARENTS_TAPE[node_id].first, out_grads.first);
-		}
-
-		if (out_grads.second >= 0)
-		{
-			AddDerivative(PARENTS_TAPE[node_id].second, out_grads.second);
-			ComputeDerivatives(PARENTS_TAPE[node_id].second, out_grads.second);
-		}	
-	}
-}
 
 void Gradient::AddDerivative(int pnode, int gnode)
 {
