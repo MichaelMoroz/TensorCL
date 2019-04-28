@@ -1,5 +1,5 @@
 # TensorCL
-An OpenCL tensor library with automatic differentiation(WIP).
+An OpenCL tensor library with automatic differentiation.
 Mainly designed to make neural nets
 
 ## System Dependencies
