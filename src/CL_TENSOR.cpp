@@ -60,6 +60,8 @@ TensorCL::TensorCL(int x, int y, int z, int w)
 	param.size[2] = z;
 	param.size[3] = w;
 
+	param.rank = 1;
+
 	if (y > 1)
 	{
 		param.rank = 2;

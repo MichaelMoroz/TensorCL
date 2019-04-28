@@ -131,7 +131,7 @@ public:
 	//derivative with respect to
 	Tensor wrt(Tensor& X);
 private:
-	void ComputeDerivative(int parent_id, int child_id);
-
+	void ComputeDerivatives(int node_id, int grad_id);
+	void AddDerivative(int pnode, int gnode);
 	std::map<int, int> dydx;
 };
