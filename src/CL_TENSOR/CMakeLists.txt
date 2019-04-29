@@ -5,6 +5,6 @@ add_library(CL_TENSOR
   Tensor.h
   Tensor.cpp
   
-  OpTensor.h
-  OpTensor.cpp
+  Optimizer.h
+  Optimizer.cpp
 )

@@ -85,6 +85,7 @@ protected:
 	std::vector<int> old_ids;
 	bool copied;
 };
+
 void PrintTAPE(bool disp_value);
 
 //backpropagation class
@@ -99,7 +100,7 @@ public:
 	//derivative with respect to
 	Tensor wrt(Tensor& X);
 
-private:
+protected:
 
 	void AddDerivative(int pnode, int gnode);
 	std::map<int, int> dydx;
