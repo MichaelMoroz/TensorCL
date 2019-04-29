@@ -28,12 +28,13 @@ void Optimizer::Optimization_Cost(Tensor & COST)
 
 void Optimizer::OptimizationIteration(float dt)
 {
-	Gradient *grad;
+	iterations++;
+	std::unique_ptr<Gradient> grad;
 	float beta_1 = 0.9f, beta_2 = 0.999f, epsilon = 1e-4f;
 	switch (method_used)
 	{
 	case GRAD_DESC:
-		grad = new Gradient(cost_id);
+		grad.reset(new Gradient(cost_id));
 		for (auto &tensor : OPTIM_TENSORS)
 		{
 			//operate only on base tensors, we wont need to find the gradient of gradient descent anyway =)
@@ -41,7 +42,7 @@ void Optimizer::OptimizationIteration(float dt)
 		}
 		break;
 	case ADAM:
-		grad = new Gradient(cost_id);
+		grad.reset(new Gradient(cost_id));
 		for (auto &tensor : OPTIM_TENSORS)
 		{
 			moment[tensor] = moment[tensor] * beta_1 + grad->wrt(tensor).GetTensor() * (1 - beta_1);

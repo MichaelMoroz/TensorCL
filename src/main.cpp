@@ -36,6 +36,8 @@ int main(int argc, char *argv[]) {
 
 		PrintTAPE(false);
 	}
+
+
 	PrintTAPE(false);
 	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
 	font.loadFromFile("arialbd.ttf");

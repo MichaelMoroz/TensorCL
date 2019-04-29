@@ -126,22 +126,22 @@ TensorCL::TensorCL(TensorCL &X)
 
 TensorCL& TensorCL::operator+=(TensorCL &X)
 {
-	*this = *this + X;
+	return *this = *this + X;
 }
 
 TensorCL& TensorCL::operator-=(TensorCL &X)
 {
-	*this = *this - X;
+	return *this = *this - X;
 }
 
 TensorCL& TensorCL::operator*=(TensorCL &X)
 {
-	*this = *this * X;
+	return *this = *this * X;
 }
 
 TensorCL& TensorCL::operator/=(TensorCL &X)
 {
-	*this = *this / X;
+	return *this = *this / X;
 }
 
 TensorCL::TensorCL(TensorCL &X, float fill)

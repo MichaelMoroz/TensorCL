@@ -244,16 +244,20 @@ Tensor::Tensor(Tensor && X)
 
 Tensor & Tensor::operator=(Tensor & X)
 {
+	old_ids.push_back(tape_id);
 	tape_id = X.tape_id;
+	copied = true;
+	cloned = false;
 	return *this;
 }
 
 Tensor & Tensor::operator=(Tensor && X)
 {
+	old_ids.push_back(tape_id);
 	tape_id = X.tape_id;
 	X.tape_id = -100;
-	old_ids = X.old_ids;
-	X.old_ids.clear();
+	copied = false;
+	cloned = false;
 	return *this;
 }
 
