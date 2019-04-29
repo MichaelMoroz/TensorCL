@@ -124,6 +124,26 @@ TensorCL::TensorCL(TensorCL &X)
 	CL->queue.flush();
 }
 
+TensorCL& TensorCL::operator+=(TensorCL &X)
+{
+	*this = *this + X;
+}
+
+TensorCL& TensorCL::operator-=(TensorCL &X)
+{
+	*this = *this - X;
+}
+
+TensorCL& TensorCL::operator*=(TensorCL &X)
+{
+	*this = *this * X;
+}
+
+TensorCL& TensorCL::operator/=(TensorCL &X)
+{
+	*this = *this / X;
+}
+
 TensorCL::TensorCL(TensorCL &X, float fill)
 {
 	param = X.param;

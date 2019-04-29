@@ -31,12 +31,12 @@ Tensor::Tensor(TensorCL & input, std::pair<int, int> parents, OPERATION op)
 Tensor::Tensor(int id)
 {
 	tape_id = id;
-	copied = true;
+	cloned = true;
 }
 
 Tensor::Tensor(Tensor & x, float fill)
 {
-	*this = Tensor(TensorCL(VALUE_TAPE[x.tape_id], fill), std::pair<int,int>(x.tape_id, -1), MORE_M); //random operation
+	*this = Tensor(TensorCL(VALUE_TAPE[x.tape_id], fill), std::pair<int,int>(x.tape_id, -1), NOT);
 }
 
 void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
@@ -46,6 +46,7 @@ void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 	OPERATION_TAPE.emplace(idt, op);
 	PARENTS_TAPE.emplace(idt, parents);
 	copied = false;
+	cloned = false;
 	idt++;
 }
 
@@ -211,7 +212,7 @@ Tensor::~Tensor()
 	if (VALUE_TAPE.count(tape_id) != 0) //if not yet deleted
 	{
 		//if this node is of operation type none -> then delete the entire tree since it can't be used out of scope anyway
-		if (OPERATION_TAPE[tape_id] == NONE)
+		if (OPERATION_TAPE[tape_id] == NONE && !cloned)
 		{
 			RecursiveDestruction(tape_id, !copied); //destroy only the childs if copied
 		}
@@ -569,6 +570,11 @@ Gradient::Gradient(Tensor END)
 	}
 }
 
+Gradient::Gradient(int tensor_id)
+{
+	*this = Gradient(Tensor(tensor_id));
+}
+
 Gradient::Gradient(Gradient & A)
 {
 	dydx = A.dydx;
@@ -582,14 +588,19 @@ Gradient & Gradient::operator=(Gradient & X)
 
 Tensor Gradient::wrt(Tensor & X)
 {
-	if (VALUE_TAPE.count(dydx[X.ID()]) != 0) //if exists
+	return wrt(X.ID());
+}
+
+Tensor Gradient::wrt(int tensor_id)
+{
+	if (VALUE_TAPE.count(dydx[tensor_id]) != 0) //if exists
 	{
-		return VALUE_TAPE[dydx[X.ID()]];
+		return VALUE_TAPE[dydx[tensor_id]];
 	}
 	else
 	{
-		return X;
-	}	
+		return Tensor(tensor_id);
+	}
 }
 
 

@@ -51,11 +51,15 @@ public:
 	TensorCL& operator=(TensorCL&& X);
 	TensorCL& operator=(float a);
 
+	TensorCL& operator+=(TensorCL &X);
+	TensorCL& operator-=(TensorCL &X);
+	TensorCL& operator*=(TensorCL &X);
+	TensorCL& operator/=(TensorCL &X);
+
 	TensorCL operator+(TensorCL &X);
 	TensorCL operator-(TensorCL &X);
 	TensorCL operator*(TensorCL &X);
 	TensorCL operator/(TensorCL &X);
-
 
 	TensorCL operator+(float x);
 	TensorCL operator-(float x);

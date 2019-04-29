@@ -8,7 +8,7 @@ class Tensor
 public:
 	enum OPERATION
 	{
-		NONE,
+		NONE, NOT,
 		ADD_T, SUBS_T, MUL_T, DIV_T, NEG,
 		ADD_N, SUBS_N, MUL_N, DIV_N,
 		SIN, COS, TAN, EXP, LOG, TANH, POW,
@@ -83,7 +83,7 @@ protected:
 	//the id of this element inside the tape
 	int tape_id;
 	std::vector<int> old_ids;
-	bool copied;
+	bool copied, cloned;
 };
 
 void PrintTAPE(bool disp_value);
@@ -93,13 +93,13 @@ class Gradient
 {
 public:
 	Gradient(Tensor END);
-
+	Gradient(int tensor_id);
 	Gradient(Gradient& A);
 	Gradient& operator=(Gradient &X);
 
 	//derivative with respect to
 	Tensor wrt(Tensor& X);
-
+	Tensor wrt(int tensor_id);
 protected:
 
 	void AddDerivative(int pnode, int gnode);
