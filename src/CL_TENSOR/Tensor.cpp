@@ -400,7 +400,7 @@ void PrintTAPE(bool disp_value)
 	// Iterate through the map
 	while (it != PARENTS_TAPE.end())
 	{
-		std::cout <<"Record_" <<i << " :: " << it->second.first << " * " << it->second.second << " " << getOperationName(it2->second) << std::endl;
+		std::cout <<"Record_" <<i << " :: " << getOperationName(it2->second) << "( arg1_id = " << it->second.first << ", arg2_id = " << it->second.second << ") " << std::endl;
 		if (disp_value)
 		{
 			PrintTensor(it3->second);

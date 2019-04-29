@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
 
 		PrintTensor(SIN);
 
-		Tensor DOT = sum(sum(dot(SIN, B)));
+		Tensor DOT = dot(SIN, B);
 		PrintTensor(DOT);
 
 		Gradient dDOT(DOT);
