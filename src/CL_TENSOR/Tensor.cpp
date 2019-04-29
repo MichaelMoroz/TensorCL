@@ -186,7 +186,7 @@ std::vector<int> Tensor::FindChilds(int id)
 	return childs;
 }
 
-void Tensor::RecursiveDestruction(int id)
+void Tensor::RecursiveDestruction(int id, bool delete_this)
 {
 	if (VALUE_TAPE.count(id) != 0) //if not yet deleted
 	{
@@ -197,9 +197,12 @@ void Tensor::RecursiveDestruction(int id)
 			RecursiveDestruction(childs[i]);
 		}
 
-		VALUE_TAPE.erase(id);
-		OPERATION_TAPE.erase(id);
-		PARENTS_TAPE.erase(id);
+		if (delete_this)
+		{
+			VALUE_TAPE.erase(id);
+			OPERATION_TAPE.erase(id);
+			PARENTS_TAPE.erase(id);
+		}
 	}
 }
 
@@ -208,9 +211,9 @@ Tensor::~Tensor()
 	if (VALUE_TAPE.count(tape_id) != 0) //if not yet deleted
 	{
 		//if this node is of operation type none -> then delete the entire tree since it can't be used out of scope anyway
-		if (OPERATION_TAPE[tape_id] == NONE && !copied)
+		if (OPERATION_TAPE[tape_id] == NONE)
 		{
-			RecursiveDestruction(tape_id);
+			RecursiveDestruction(tape_id, !copied); //destroy only the childs if copied
 		}
 
 		//delete everything from previous states

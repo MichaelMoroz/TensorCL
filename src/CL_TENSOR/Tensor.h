@@ -77,7 +77,7 @@ public:
 
 protected:
 	std::vector<int> FindChilds(int id);
-	void RecursiveDestruction(int id);
+	void RecursiveDestruction(int id, bool dt = true);
 	void init(TensorCL &X, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
 
 	//the id of this element inside the tape
