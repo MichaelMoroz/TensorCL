@@ -16,14 +16,17 @@ int main(int argc, char *argv[]) {
 
 		A = (indicies(A, 0) + 1 + indicies(A, 1))/10.f;
 		PrintTensor(A);
-		B = indicies(B, 1) + indicies(B, 0);
+		B = indicies(B, 1) + indicies(B, 0)+1.f;
+		Tensor dB = _if(B<2, B, 0.f);
+		B = B + dB;
 		PrintTensor(B);
+		PrintTensor(dB);
 
-		Tensor SIN = sin(A) + B*0.5f;
+		Tensor SIN = sin(A) + cos(B)*0.5f;
 
 		PrintTensor(SIN);
 
-		Tensor DOT = sum(dot(SIN, B));
+		Tensor DOT = sum(sum(dot(SIN, B)));
 		PrintTensor(DOT);
 
 		Gradient dDOT(DOT);

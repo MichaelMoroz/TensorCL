@@ -31,6 +31,7 @@ Tensor::Tensor(TensorCL & input, std::pair<int, int> parents, OPERATION op)
 Tensor::Tensor(int id)
 {
 	tape_id = id;
+	copied = true;
 }
 
 Tensor::Tensor(Tensor & x, float fill)
@@ -44,6 +45,7 @@ void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 	VALUE_TAPE[idt] = X;
 	OPERATION_TAPE.emplace(idt, op);
 	PARENTS_TAPE.emplace(idt, parents);
+	copied = false;
 	idt++;
 }
 
@@ -80,7 +82,18 @@ Tensor Tensor::tanh()
 Tensor Tensor::operator^(float y)
 {
 	FLOAT_TAPE[idt] = y;
-	return Tensor(VALUE_TAPE[this->tape_id]^y, std::pair<int, int>(this->tape_id, -1), POW);
+	if (y == 1) //dont use pow if power is = 1
+	{
+		return Tensor(this->tape_id);
+	}
+	else if (y == 0) // when pow = 0 then tensor = 1
+	{
+		return Tensor(Tensor(this->tape_id),1.f);
+	}
+	else
+	{
+		return Tensor(VALUE_TAPE[this->tape_id] ^ y, std::pair<int, int>(this->tape_id, -1), POW);
+	}
 }
 
 Tensor Tensor::sum()
@@ -195,7 +208,7 @@ Tensor::~Tensor()
 	if (VALUE_TAPE.count(tape_id) != 0) //if not yet deleted
 	{
 		//if this node is of operation type none -> then delete the entire tree since it can't be used out of scope anyway
-		if (OPERATION_TAPE[tape_id] == NONE)
+		if (OPERATION_TAPE[tape_id] == NONE && !copied)
 		{
 			RecursiveDestruction(tape_id);
 		}
@@ -214,6 +227,7 @@ Tensor::~Tensor()
 Tensor::Tensor(Tensor & X)
 {
 	tape_id = X.tape_id;
+	copied = true;
 }
 
 Tensor::Tensor(Tensor && X)
@@ -584,7 +598,7 @@ std::pair<int, int> VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 	case Tensor::MUL_T:
 		return std::pair<int, int>((Tensor(outgrad_id)*Tensor(id_b)).ID(), (Tensor(outgrad_id)*Tensor(id_a)).ID());
 	case Tensor::DIV_T:
-		return std::pair<int, int>((Tensor(outgrad_id) / Tensor(id_b)).ID(), (-Tensor(outgrad_id)*Tensor(id_a)*(Tensor(id_b) ^ 2)).ID());
+		return std::pair<int, int>((Tensor(outgrad_id) / Tensor(id_b)).ID(), (-Tensor(outgrad_id)*Tensor(id_a)*( Tensor(id_b) ^ (-2.f) )).ID());
 	case Tensor::NEG:
 		return std::pair<int, int>((-Tensor(outgrad_id)).ID(), -1);
 	case Tensor::ADD_N:
@@ -604,14 +618,14 @@ std::pair<int, int> VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 	case Tensor::COS:
 		return std::pair<int, int>((-sin(Tensor(id_a))*Tensor(outgrad_id)).ID(), -1);
 	case Tensor::TAN:
-		return std::pair<int, int>((Tensor(outgrad_id) / (cos(Tensor(id_a)) ^ 2)).ID(), -1);
+		return std::pair<int, int>((Tensor(outgrad_id) * ( cos(Tensor(id_a)) ^ (-2) )).ID(), -1);
 	case Tensor::LOG:
-		return std::pair<int, int>((Tensor(outgrad_id) / (Tensor(id_a))).ID(), -1);
+		return std::pair<int, int>((Tensor(outgrad_id) / (Tensor(id_a)) ).ID(), -1);
 	case Tensor::TANH:
 		return std::pair<int, int>((Tensor(outgrad_id) * (1 - Tensor(out_id) ^ 2)).ID(), -1);
 	case Tensor::POW:
 		num = FLOAT_TAPE[out_id];
-		return std::pair<int, int>((Tensor(outgrad_id) * num * Tensor(id_a) ^ (num - 1)).ID(), -1);
+		return std::pair<int, int>((Tensor(outgrad_id) * (Tensor(id_a) ^ (num - 1)) * num).ID(), -1);
 	case Tensor::EXP:
 		return std::pair<int, int>((Tensor(outgrad_id) * Tensor(out_id)).ID(), -1);
 	case Tensor::SUM:

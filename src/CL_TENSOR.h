@@ -99,7 +99,7 @@ public:
 
 	~TensorCL();
 
-private:
+protected:
 	void init_data(float value = 0.f);
 	TensorCL MAD(float a, float b); //multiplication and addition
 
