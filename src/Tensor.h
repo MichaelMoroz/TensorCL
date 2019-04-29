@@ -85,40 +85,7 @@ protected:
 	std::vector<int> old_ids;
 	bool copied;
 };
-
-
 void PrintTAPE(bool disp_value);
-void PrintTensor(Tensor& a);
-
-
-Tensor operator+(float x, Tensor& Y);
-Tensor operator-(float x, Tensor& Y);
-Tensor operator*(float x, Tensor& Y);
-Tensor operator/(float x, Tensor& Y);
-Tensor operator>(float x, Tensor& Y);
-Tensor operator<(float x, Tensor& Y);
-
-Tensor sin(Tensor& X);
-Tensor cos(Tensor& X);
-Tensor tan(Tensor& X);
-Tensor exp(Tensor& X);
-Tensor log(Tensor& X);
-Tensor sum(Tensor& X);
-Tensor tanh(Tensor& X);
-
-Tensor min(Tensor &X, Tensor& Y);
-Tensor max(Tensor &X, Tensor& Y);
-Tensor min(Tensor& X, float y = 0.f);
-Tensor max(Tensor& X, float y = 0.f);
-Tensor min(float y, Tensor& X);
-Tensor max(float y, Tensor& X);
-
-Tensor dot(Tensor& X, Tensor& Y);
-Tensor indicies(Tensor& X, int dim = 0);
-Tensor repeat(Tensor& X, int n);
-Tensor transpose(Tensor& X, int dim_a = 0, int dim_b = 1);
-
-Tensor _if(Tensor& _cond, Tensor& _true, float _false);
 
 //backpropagation class
 class Gradient

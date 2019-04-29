@@ -111,36 +111,206 @@ protected:
 	float* host_data;
 };
 
+template<typename T> void PrintTensor(T& a);
+
 void PrintTensor(TensorCL& a);
 
-TensorCL operator+(float x, TensorCL& Y);
-TensorCL operator-(float x, TensorCL& Y);
-TensorCL operator*(float x, TensorCL& Y);
-TensorCL operator/(float x, TensorCL& Y);
-TensorCL operator>(float x, TensorCL& Y);
-TensorCL operator<(float x, TensorCL& Y);
+template<typename T> T operator+(float x, T& Y);
+template<typename T> T operator-(float x, T& Y);
+template<typename T> T operator*(float x, T& Y);
+template<typename T> T operator/(float x, T& Y);
+template<typename T> T operator>(float x, T& Y);
+template<typename T> T operator<(float x, T& Y);
 
-TensorCL sin(TensorCL& X);
-TensorCL cos(TensorCL& X);
-TensorCL tan(TensorCL& X); 
-TensorCL exp(TensorCL& X);
-TensorCL log(TensorCL& X);
-TensorCL sum(TensorCL& X);
-TensorCL tanh(TensorCL& X);
+template<typename T> T sin(T& X);
+template<typename T> T cos(T& X);
+template<typename T> T tan(T& X);
+template<typename T> T exp(T& X);
+template<typename T> T log(T& X);
+template<typename T> T sum(T& X);
+template<typename T> T tanh(T& X);
 
-TensorCL min(TensorCL &X, TensorCL& Y);
-TensorCL max(TensorCL &X, TensorCL& Y);
-TensorCL min(TensorCL& X, float y = 0.f);
-TensorCL max(TensorCL& X, float y = 0.f);
-TensorCL min(float y, TensorCL& X);
-TensorCL max(float y, TensorCL& X);
+template<typename T> T min(T &X, T& Y);
+template<typename T> T max(T &X, T& Y);
+template<typename T> T min(T& X, float y = 0.f);
+template<typename T> T max(T& X, float y = 0.f);
+template<typename T> T min(float y, T& X);
+template<typename T> T max(float y, T& X);
 
-TensorCL dot(TensorCL& X, TensorCL& Y);
-TensorCL indicies(TensorCL& X, int dim = 0);
-TensorCL repeat(TensorCL& X, int n = 1);
-TensorCL transpose(TensorCL& X, int dim_a = 0, int dim_b = 1);
+template<typename T> T dot(T& X, T& Y);
+template<typename T> T indicies(T& X, int dim = 0);
+template<typename T> T repeat(T& X, int n = 1);
+template<typename T> T transpose(T& X, int dim_a = 0, int dim_b = 1);
 
-TensorCL _if(TensorCL& _cond, TensorCL& _true, TensorCL& _false);
-TensorCL _if(TensorCL& _cond, TensorCL& _true, float _false);
-TensorCL _if(TensorCL& _cond, float _true, TensorCL& _false);
-TensorCL _if(TensorCL& _cond, float _true, float _false);
+template<typename T> T _if(T& _cond, T& _true, T& _false);
+template<typename T> T _if(T& _cond, T& _true, float _false);
+template<typename T> T _if(T& _cond, float _true, T& _false);
+template<typename T> T _if(T& _cond, float _true, float _false);
+
+template<typename T>
+inline void PrintTensor(T & a)
+{
+	PrintTensor(a.GetTensor());
+}
+
+template<typename T>
+inline T operator+(float x, T & Y)
+{
+	return Y + x;
+}
+
+template<typename T>
+inline T operator-(float x, T & Y)
+{
+	return -Y + x;
+}
+
+template<typename T> 
+inline T operator*(float x, T& Y)
+{
+	return Y * x;
+}
+
+template<typename T>
+inline T operator/(float x, T& Y)
+{
+	return Y / x;
+}
+
+template<typename T> 
+inline T operator>(float x, T& Y)
+{
+	return Y < x;
+}
+
+template<typename T> 
+inline T operator<(float x, T& Y)
+{
+	return Y > x;
+}
+
+template<typename T> 
+inline T sin(T& X)
+{
+	return X.sin();
+}
+
+template<typename T> 
+inline T cos(T& X)
+{
+	return X.cos();
+}
+
+template<typename T> 
+inline T tan(T& X)
+{
+	return X.tan();
+}
+
+template<typename T> 
+inline T exp(T& X)
+{
+	return X.exp();
+}
+
+template<typename T> 
+inline T log(T& X)
+{
+	return X.log();
+}
+
+template<typename T> 
+inline T sum(T& X)
+{
+	return X.sum();
+}
+
+template<typename T>
+inline T tanh(T & X)
+{
+	return X.tanh();
+}
+
+template<typename T>
+inline T min(T & X, T & Y)
+{
+	return X.min(Y);
+}
+
+template<typename T>
+inline T max(T & X, T & Y)
+{
+	return X.max(Y);
+}
+
+template<typename T>
+inline T min(T & X, float y)
+{
+	return X.min(y);
+}
+
+template<typename T>
+inline T max(T & X, float y)
+{
+	return X.max(y);
+}
+
+template<typename T>
+inline T min(float y, T & X)
+{
+	return X.max(y);
+}
+
+template<typename T>
+inline T max(float y, T & X)
+{
+	return X.min(y);
+}
+
+template<typename T>
+inline T dot(T & X, T & Y)
+{
+	return X.dot(Y);
+}
+
+template<typename T>
+inline T indicies(T & X, int dim)
+{
+	return  X.indicies(dim);
+}
+
+template<typename T>
+inline T repeat(T & X, int n)
+{
+	return X.repeat(n);
+}
+
+template<typename T>
+inline T transpose(T & X, int dim_a, int dim_b)
+{
+	return X.transpose(dim_a, dim_b);
+}
+
+template<typename T>
+inline T _if(T & _cond, T & _true, T & _false)
+{
+	return _cond._if(_true, _false);
+}
+
+template<typename T>
+inline T _if(T & _cond, T & _true, float _false)
+{
+	return _cond._if(_true, _false);
+}
+
+template<typename T>
+inline T _if(T & _cond, float _true, T & _false)
+{
+	return _cond._if(_true, _false);
+}
+
+template<typename T>
+inline T _if(T & _cond, float _true, float _false)
+{
+	return _cond._if(_true, _false);
+}
