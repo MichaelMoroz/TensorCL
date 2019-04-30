@@ -232,6 +232,7 @@ Tensor::Tensor(Tensor & X)
 {
 	tape_id = X.tape_id;
 	copied = true;
+	cloned = false;
 }
 
 Tensor::Tensor(Tensor && X)
@@ -240,6 +241,8 @@ Tensor::Tensor(Tensor && X)
 	X.tape_id = -100;
 	old_ids = X.old_ids;
 	X.old_ids.clear();
+	copied = false;
+	cloned = false;
 }
 
 Tensor & Tensor::operator=(Tensor & X)

@@ -1,3 +1,4 @@
+#pragma once
 #include <CL_TENSOR.h>
 #include <map>
 #include <string>

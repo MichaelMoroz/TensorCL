@@ -1,5 +1,6 @@
 #include <SFML_plot.h>
 #include <Tensor.h>
+#include <Optimizer.h>
 
 using namespace std;
 
@@ -12,28 +13,21 @@ int main(int argc, char *argv[]) {
 	{
 		TensorUseOpenCL(&cl);
 
-		Tensor A(3, 3), B(3, 3);
+		Tensor A(3, 3);
 
-		A = (indicies(A, 0) + 1 + indicies(A, 1))/10.f;
+		A = 1;
 		PrintTensor(A);
-		B = indicies(B, 1) + indicies(B, 0)+1.f;
-		Tensor dB = _if(B<2, B, 0.f);
-		B = B + dB;
-		PrintTensor(B);
-		PrintTensor(dB);
+		Optimizer root(Optimizer::GRAD_DESC);
+		root.AddParameter(A);
 
-		Tensor SIN = sin(A) + cos(B)*0.5f;
-
-		PrintTensor(SIN);
-
-		Tensor DOT = dot(SIN, B);
-		PrintTensor(DOT);
-
-		Gradient dDOT(DOT);
-
-		PrintTensor(dDOT.wrt(A));
-		PrintTensor(dDOT.wrt(B));
-
+		for (int i = 0; i < 10; i++)
+		{
+			Tensor Acopy(A);
+			Tensor B = sin(A)^2;
+			root.Optimization_Cost(B);
+			root.OptimizationIteration(0.5);
+			PrintTensor(sum(sum(B)));
+		}
 		PrintTAPE(false);
 	}
 

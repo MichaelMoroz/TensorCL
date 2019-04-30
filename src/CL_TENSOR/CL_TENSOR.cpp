@@ -514,6 +514,7 @@ void TensorUseOpenCL(OpenCL *cl)
 	more_n.Initialize("tensor_more_n", CL);
 	less_n.Initialize("tensor_less_n", CL);
 	if_cond.Initialize("tensor_if", CL);
+	powfun.Initialize("tensor_pow", CL); 
 }
 
 void PrintTensor(TensorCL & a)
