@@ -91,8 +91,11 @@ TensorCL& TensorCL::operator=(float a)
 }
 
 //r-value -> move 
-TensorCL::TensorCL(TensorCL && p): data(p.data), host_data(p.host_data), param(p.param)
+TensorCL::TensorCL(TensorCL && p)
 {
+	std::swap(this->data, p.data);
+	std::swap(this->host_data, p.host_data);
+	std::swap(this->param, p.param);
 	p.data = NULL;
 	p.host_data = NULL;
 }
@@ -102,6 +105,8 @@ TensorCL & TensorCL::operator=(TensorCL && p)
 	std::swap(this->data, p.data);
 	std::swap(this->host_data, p.host_data);
 	std::swap(this->param, p.param);
+	p.data = NULL;
+	p.host_data = NULL;
 	return *this;
 }
 

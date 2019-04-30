@@ -12,6 +12,7 @@ std::map<int, std::pair<int, int> > PARENTS_TAPE;
 std::map<int, float> FLOAT_TAPE;
 std::map<int, std::pair<int, int> > TRANSPOSE_TAPE;
 std::map<int, int> REPEAT_TAPE;
+std::map<int, bool> DESTROYED_TAPE;
 
 Tensor::Tensor(unsigned int x, unsigned int y, unsigned int z, unsigned int w)
 {
@@ -31,7 +32,6 @@ Tensor::Tensor(TensorCL & input, std::pair<int, int> parents, OPERATION op)
 Tensor::Tensor(int id)
 {
 	tape_id = id;
-	cloned = true;
 }
 
 Tensor::Tensor(Tensor & x, float fill)
@@ -45,8 +45,8 @@ void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 	VALUE_TAPE[idt] = X;
 	OPERATION_TAPE.emplace(idt, op);
 	PARENTS_TAPE.emplace(idt, parents);
+	DESTROYED_TAPE[tape_id] = false;
 	copied = false;
-	cloned = false;
 	idt++;
 }
 
@@ -187,7 +187,7 @@ std::vector<int> Tensor::FindChilds(int id)
 	return childs;
 }
 
-void Tensor::RecursiveDestruction(int id, bool delete_this)
+void Tensor::RecursiveDestructionChilds(int id, bool delete_this)
 {
 	if (VALUE_TAPE.count(id) != 0) //if not yet deleted
 	{
@@ -195,35 +195,73 @@ void Tensor::RecursiveDestruction(int id, bool delete_this)
 
 		for (int i = 0; i < childs.size(); i++)
 		{
-			RecursiveDestruction(childs[i]);
+			RecursiveDestructionChilds(childs[i]);
 		}
 
 		if (delete_this)
 		{
 			VALUE_TAPE.erase(id);
 			OPERATION_TAPE.erase(id);
-			PARENTS_TAPE.erase(id);
+			PARENTS_TAPE.erase(id); 
+			DESTROYED_TAPE.erase(id);
 		}
 	}
+}
+
+void Tensor::RecursiveDestructionParents(int id)
+{
+	if (VALUE_TAPE.count(id) != 0) //if not yet deleted
+	{
+		if (DESTROYED_TAPE[id])
+		{
+			RecursiveDestructionParents(PARENTS_TAPE[id].first);
+			RecursiveDestructionParents(PARENTS_TAPE[id].second);
+			
+			VALUE_TAPE.erase(id);
+			OPERATION_TAPE.erase(id);
+			PARENTS_TAPE.erase(id);
+			DESTROYED_TAPE.erase(id);
+		}
+	}
+}
+
+bool Tensor::AreAllChildsDestroyed(int id)
+{
+	std::vector<int> childs = FindChilds(id);
+
+	bool tree_destroyed = DESTROYED_TAPE[id];
+
+	for (int i = 0; i < childs.size(); i++)
+	{
+		tree_destroyed = tree_destroyed && AreAllChildsDestroyed(childs[i]);
+	}
+
+	return tree_destroyed;
 }
 
 Tensor::~Tensor()
 {
 	if (VALUE_TAPE.count(tape_id) != 0) //if not yet deleted
 	{
-		//if this node is of operation type none -> then delete the entire tree since it can't be used out of scope anyway
-		if (OPERATION_TAPE[tape_id] == NONE && !cloned)
-		{
-			RecursiveDestruction(tape_id, !copied); //destroy only the childs if copied
-		}
+		if(!copied)
+			DESTROYED_TAPE[tape_id] = true;
 
-		//delete everything from previous states
+		//destroy everything from previous states
 		for (int i = 0; i < old_ids.size(); i++)
 		{
-			if (OPERATION_TAPE[old_ids[i]] == NONE)
+			int id = old_ids[i];
+			DESTROYED_TAPE[id] = true;
+			if (AreAllChildsDestroyed(id))
 			{
-				RecursiveDestruction(old_ids[i]);
+				RecursiveDestructionParents(id);
+				RecursiveDestructionChilds(id);
 			}
+		}
+
+		if (AreAllChildsDestroyed(tape_id))
+		{
+			RecursiveDestructionParents(tape_id);
+			RecursiveDestructionChilds(tape_id, !copied);
 		}
 	}
 }
@@ -232,7 +270,6 @@ Tensor::Tensor(Tensor & X)
 {
 	tape_id = X.tape_id;
 	copied = true;
-	cloned = false;
 }
 
 Tensor::Tensor(Tensor && X)
@@ -241,16 +278,12 @@ Tensor::Tensor(Tensor && X)
 	X.tape_id = -100;
 	old_ids = X.old_ids;
 	X.old_ids.clear();
-	copied = false;
-	cloned = false;
 }
 
 Tensor & Tensor::operator=(Tensor & X)
 {
 	old_ids.push_back(tape_id);
 	tape_id = X.tape_id;
-	copied = true;
-	cloned = false;
 	return *this;
 }
 
@@ -259,8 +292,6 @@ Tensor & Tensor::operator=(Tensor && X)
 	old_ids.push_back(tape_id);
 	tape_id = X.tape_id;
 	X.tape_id = -100;
-	copied = false;
-	cloned = false;
 	return *this;
 }
 

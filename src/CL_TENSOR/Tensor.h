@@ -3,7 +3,7 @@
 #include <map>
 #include <string>
 
-//TensorCL wrapper with automatic differentiation
+//TensorCL wrapper witch creates an operation tree for automatic differentiation
 class Tensor
 {
 public:
@@ -78,13 +78,15 @@ public:
 
 protected:
 	std::vector<int> FindChilds(int id);
-	void RecursiveDestruction(int id, bool dt = true);
+	void RecursiveDestructionChilds(int id, bool dt = true);
+	void RecursiveDestructionParents(int id);
+	bool AreAllChildsDestroyed(int id);
 	void init(TensorCL &X, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
 
 	//the id of this element inside the tape
 	int tape_id;
 	std::vector<int> old_ids;
-	bool copied, cloned;
+	bool copied;
 };
 
 void PrintTAPE(bool disp_value);

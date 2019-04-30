@@ -13,6 +13,7 @@ int main(int argc, char *argv[]) {
 	{
 		TensorUseOpenCL(&cl);
 
+		
 		Tensor A(3, 3);
 
 		A = 1;
@@ -22,12 +23,12 @@ int main(int argc, char *argv[]) {
 
 		for (int i = 0; i < 10; i++)
 		{
-			Tensor Acopy(A);
 			Tensor B = sin(A)^2;
-			root.Optimization_Cost(B);
-			root.OptimizationIteration(0.5);
-			PrintTensor(sum(sum(B)));
+			//root.Optimization_Cost(B);
+			//root.OptimizationIteration(0.5);
+			PrintTensor(B);
 		}
+
 		PrintTAPE(false);
 	}
 
