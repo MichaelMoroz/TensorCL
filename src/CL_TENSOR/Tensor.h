@@ -50,6 +50,9 @@ public:
 	Tensor operator>(float x);
 	Tensor operator<(float x);
 
+	float operator()(int i = 1, int j = 1, int k = 1, int m = 1);
+
+	Tensor random();
 	Tensor sin();
 	Tensor cos();
 	Tensor tan();

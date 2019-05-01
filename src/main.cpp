@@ -13,36 +13,43 @@ int main(int argc, char *argv[]) {
 	{
 		TensorUseOpenCL(&cl);
 
-		Tensor A(3, 3);
+		Tensor A(16, 16), C(16, 16);
 
-		A = 1;
+		A = random(A);
+		C = indicies(C, 0) + 3*indicies(C, 1);
 		PrintTensor(A);
-		Optimizer root(Optimizer::GRAD_DESC);
+		Optimizer root(Optimizer::ADAM);
 		root.AddParameter(A);
+		root.AddParameter(C);
+		
+		SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
+		font.loadFromFile("arialbd.ttf");
+		
+		window.AddEmptyLine(sf::Color::Red, "Tensor B");
 
-		for (int i = 0; i < 10; i++)
+		int i = 0;
+		while (window.open)
 		{
-			Tensor B = sin(A)^2;
-			root.Optimization_Cost(B);
-			root.OptimizationIteration(0.5);
-			PrintTensor(sum(B));
-			PrintTAPE(false);
+			i++;
+			if (i < 100)
+			{
+				Tensor B = dot(sin(A - C), cos(C + A)) ^ 2;
+				root.Optimization_Cost(B);
+				root.OptimizationIteration(0.01);
+
+				Tensor COST = sum(sum(B));
+				window.AddPointToLine(0, i, COST());
+			}
+			window.UpdateState();
 		}
 
+		PrintTensor(A);
+		PrintTensor(C);
 		PrintTAPE(false);
 	}
 
-
 	PrintTAPE(false);
-	/*SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
-	font.loadFromFile("arialbd.ttf");
-	int i = 0;
-	window.AddEmptyLine(sf::Color::Red, "log10, Average Force, eV/A");
-	while (window.open)
-	{
-		i++;
-		window.UpdateState();
-	}*/
+	
 
 	system("pause");
 	

@@ -37,6 +37,8 @@ public:
 
 	void SetRange(int local_x, int local_y, int global_x, int global_y)
 	{
+		local_x = min(local_x, global_x);
+		local_y = min(local_y, global_y);
 		global = NDRange(ceil((float)global_x / (float)local_x)*local_x, ceil((float)global_y / (float)local_y)*local_y);
 		local = NDRange(local_x, local_y);
 	}

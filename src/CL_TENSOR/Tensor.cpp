@@ -58,6 +58,11 @@ void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 	idt++;
 }
 
+Tensor Tensor::random()
+{
+	return Tensor(VALUE_TAPE[this->tape_id].random(), std::pair<int, int>(this->tape_id, -1), NOT);
+}
+
 Tensor Tensor::sin()
 {
 	return Tensor(VALUE_TAPE[this->tape_id].sin(), std::pair<int, int>(this->tape_id, -1), SIN);
@@ -385,6 +390,11 @@ Tensor Tensor::operator<(float x)
 {
 	FLOAT_TAPE[idt] = x;
 	return Tensor(VALUE_TAPE[this->tape_id] < x, std::pair<int, int>(this->tape_id, -1), LESS_N);
+}
+
+float Tensor::operator()(int i, int j, int k, int m)
+{
+	return GetTensor()(i, j, k, m);
 }
 
 std::string getOperationName(Tensor::OPERATION op)

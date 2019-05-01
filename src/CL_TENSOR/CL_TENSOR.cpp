@@ -6,7 +6,7 @@ CLFunction more_m, less_m;
 CLFunction more_n, less_n, if_cond;
 CLFunction idx, sinfun, cosfun, tanfun, tanhfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
 CLFunction expfun, logfun, transposefun, repeatfun;
-CLFunction sumfun;
+CLFunction sumfun, randfun;
 
 TensorCL::TensorCL()
 {
@@ -341,6 +341,18 @@ TensorCL TensorCL::operator<(float x)
 	return C;
 }
 
+
+TensorCL TensorCL::random()
+{
+	TensorCL C(param); //create a temporary array
+	randfun.SetRange(CL->group_size[0], 1, param.length, 1);
+	randfun.SetArg(0, C.data); //result
+	randfun.SetArg(1, param);
+	randfun.SetArg(2, rand());
+	randfun.RFlush();
+	return C;
+}
+
 TensorCL TensorCL::sin()
 {
 	TensorCL C(param); //create a temporary array
@@ -465,6 +477,32 @@ float * TensorCL::GetData()
 	return host_data; 
 }
 
+
+int ID(cl_index indx, cl_tensor info)
+{
+	int id = 0;
+	int sh = 1;
+	for (int i = 0; i < info.rank; i++)
+	{
+		id += indx.index[i] * sh;
+		sh *= info.size[i];
+	}
+	return id;
+}
+
+float TensorCL::operator()(int i, int j, int k, int m)
+{
+	float value;
+	cl_index id;
+	id.index[0] = i;
+	id.index[1] = j;
+	id.index[2] = k;
+	id.index[3] = m;
+	//copy a single value from the GPU
+	clEnqueueReadBuffer(CL->queue(), data, CL_TRUE, ID(id, param), sizeof(float), &value, NULL, NULL, NULL);
+	return value;
+}
+
 int TensorCL::GetLength()
 {
 	return param.length;
@@ -526,6 +564,7 @@ void TensorUseOpenCL(OpenCL *cl)
 	less_n.Initialize("tensor_less_n", CL);
 	if_cond.Initialize("tensor_if", CL);
 	powfun.Initialize("tensor_pow", CL); 
+	randfun.Initialize("tensor_random", CL);
 }
 
 void PrintTensor(TensorCL & a)

@@ -72,6 +72,9 @@ public:
 	TensorCL operator>(float x);
 	TensorCL operator<(float x);
 
+	float operator()(int i = 1, int j = 1, int k = 1, int m = 1);
+
+	TensorCL random();
 	TensorCL sin();
 	TensorCL cos();
 	TensorCL tan();
@@ -128,6 +131,7 @@ template<typename T> T operator/(float x, T& Y);
 template<typename T> T operator>(float x, T& Y);
 template<typename T> T operator<(float x, T& Y);
 
+template<typename T> T random(T& X);
 template<typename T> T sin(T& X);
 template<typename T> T cos(T& X);
 template<typename T> T tan(T& X);
@@ -193,6 +197,12 @@ template<typename T>
 inline T operator<(float x, T& Y)
 {
 	return Y > x;
+}
+
+template<typename T>
+inline T random(T& X)
+{
+	return X.random();
 }
 
 template<typename T> 

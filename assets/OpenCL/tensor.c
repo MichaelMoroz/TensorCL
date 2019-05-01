@@ -209,6 +209,16 @@ __kernel void tensor_tanh(__global float* C,
 		C[i] = tanh(A[i]);
 }
 
+__kernel void tensor_random(__global float* C,
+	const cl_tensor Cdata,
+	const int seed)
+{
+	const int i = get_global_id(0);
+	int tseed = 102000*(seed + i);
+	if (i < Cdata.length)
+		C[i] = sfrand(&tseed);
+}
+
 __kernel void tensor_min(__global float* C,
 	const __global float* A,
 	const __global float* B,
