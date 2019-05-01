@@ -40,14 +40,14 @@ class TensorCL
 {
 public:
 	TensorCL(int r, vector<int> s); 
-	TensorCL(int x = 1, int y = 1, int z = 1, int w = 1); 
+	TensorCL(int x, int y, int z = 1, int w = 1); 
 	TensorCL(cl_tensor p);
 
-	TensorCL(TensorCL & X);
+	TensorCL(const TensorCL & X);
 	TensorCL(TensorCL & X, float fill);
 	TensorCL(TensorCL&& X);
 
-	TensorCL& operator=(TensorCL &X);
+	TensorCL& operator=(const TensorCL &X);
 	TensorCL& operator=(TensorCL&& X);
 	TensorCL& operator=(float a);
 
@@ -98,6 +98,8 @@ public:
 	float* GetData();
 	int GetLength();
 	cl_tensor GetParam();
+
+	TensorCL();
 
 	void release();
 

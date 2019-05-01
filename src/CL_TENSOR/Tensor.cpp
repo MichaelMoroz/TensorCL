@@ -12,7 +12,12 @@ std::map<int, std::pair<int, int> > PARENTS_TAPE;
 std::map<int, float> FLOAT_TAPE;
 std::map<int, std::pair<int, int> > TRANSPOSE_TAPE;
 std::map<int, int> REPEAT_TAPE;
-std::map<int, bool> DESTROYED_TAPE;
+std::map<int, int> NUMBER_OF_COPIES;
+
+Tensor::Tensor()
+{
+	tape_id = -1;
+}
 
 Tensor::Tensor(unsigned int x, unsigned int y, unsigned int z, unsigned int w)
 {
@@ -32,6 +37,10 @@ Tensor::Tensor(TensorCL & input, std::pair<int, int> parents, OPERATION op)
 Tensor::Tensor(int id)
 {
 	tape_id = id;
+	if (id >= 0)
+	{
+		NUMBER_OF_COPIES[tape_id] ++;
+	}
 }
 
 Tensor::Tensor(Tensor & x, float fill)
@@ -43,10 +52,9 @@ void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 {
 	tape_id = idt;
 	VALUE_TAPE[idt] = X;
-	OPERATION_TAPE.emplace(idt, op);
-	PARENTS_TAPE.emplace(idt, parents);
-	DESTROYED_TAPE[tape_id] = false;
-	copied = false;
+	OPERATION_TAPE[idt] = op;
+	PARENTS_TAPE[idt] = parents;
+	NUMBER_OF_COPIES[idt] = 1;
 	idt++;
 }
 
@@ -85,11 +93,11 @@ Tensor Tensor::operator^(float y)
 	FLOAT_TAPE[idt] = y;
 	if (y == 1) //dont use pow if power is = 1
 	{
-		return Tensor(this->tape_id);
+		return *this;
 	}
 	else if (y == 0) // when pow = 0 then tensor = 1
 	{
-		return Tensor(Tensor(this->tape_id),1.f);
+		return Tensor(Tensor(tape_id),1.f);
 	}
 	else
 	{
@@ -187,7 +195,7 @@ std::vector<int> Tensor::FindChilds(int id)
 	return childs;
 }
 
-void Tensor::RecursiveDestructionChilds(int id, bool delete_this)
+void Tensor::RecursiveDestructionChilds(int id)
 {
 	if (VALUE_TAPE.count(id) != 0) //if not yet deleted
 	{
@@ -198,12 +206,15 @@ void Tensor::RecursiveDestructionChilds(int id, bool delete_this)
 			RecursiveDestructionChilds(childs[i]);
 		}
 
-		if (delete_this)
+		if (NUMBER_OF_COPIES[id] == 0)
 		{
 			VALUE_TAPE.erase(id);
 			OPERATION_TAPE.erase(id);
-			PARENTS_TAPE.erase(id); 
-			DESTROYED_TAPE.erase(id);
+			PARENTS_TAPE.erase(id);
+			NUMBER_OF_COPIES.erase(id);
+			FLOAT_TAPE.erase(id);
+			TRANSPOSE_TAPE.erase(id);
+			REPEAT_TAPE.erase(id);
 		}
 	}
 }
@@ -212,7 +223,7 @@ void Tensor::RecursiveDestructionParents(int id)
 {
 	if (VALUE_TAPE.count(id) != 0) //if not yet deleted
 	{
-		if (DESTROYED_TAPE[id])
+		if (NUMBER_OF_COPIES[id] == 0)
 		{
 			RecursiveDestructionParents(PARENTS_TAPE[id].first);
 			RecursiveDestructionParents(PARENTS_TAPE[id].second);
@@ -220,7 +231,10 @@ void Tensor::RecursiveDestructionParents(int id)
 			VALUE_TAPE.erase(id);
 			OPERATION_TAPE.erase(id);
 			PARENTS_TAPE.erase(id);
-			DESTROYED_TAPE.erase(id);
+			NUMBER_OF_COPIES.erase(id);
+			FLOAT_TAPE.erase(id);
+			TRANSPOSE_TAPE.erase(id);
+			REPEAT_TAPE.erase(id);
 		}
 	}
 }
@@ -229,7 +243,7 @@ bool Tensor::AreAllChildsDestroyed(int id)
 {
 	std::vector<int> childs = FindChilds(id);
 
-	bool tree_destroyed = DESTROYED_TAPE[id];
+	bool tree_destroyed = NUMBER_OF_COPIES[id] == 0;
 
 	for (int i = 0; i < childs.size(); i++)
 	{
@@ -239,37 +253,34 @@ bool Tensor::AreAllChildsDestroyed(int id)
 	return tree_destroyed;
 }
 
-Tensor::~Tensor()
+void Tensor::Destroy(int id)
 {
-	if (VALUE_TAPE.count(tape_id) != 0) //if not yet deleted
+	if (VALUE_TAPE.count(id) != 0) //if not yet deleted
 	{
-		if(!copied)
-			DESTROYED_TAPE[tape_id] = true;
-
-		//destroy everything from previous states
-		for (int i = 0; i < old_ids.size(); i++)
+		NUMBER_OF_COPIES[id] -= 1;
+		if (AreAllChildsDestroyed(id))
 		{
-			int id = old_ids[i];
-			DESTROYED_TAPE[id] = true;
-			if (AreAllChildsDestroyed(id))
-			{
-				RecursiveDestructionParents(id);
-				RecursiveDestructionChilds(id);
-			}
-		}
-
-		if (AreAllChildsDestroyed(tape_id))
-		{
-			RecursiveDestructionParents(tape_id);
-			RecursiveDestructionChilds(tape_id, !copied);
+			RecursiveDestructionParents(id);
+			RecursiveDestructionChilds(id);
 		}
 	}
 }
 
-Tensor::Tensor(Tensor & X)
+Tensor::~Tensor()
+{
+	//destroy everything from previous states
+	for (auto &id:old_ids)
+	{
+		Destroy(id);
+	}
+
+	Destroy(tape_id);
+}
+
+Tensor::Tensor(const Tensor & X)
 {
 	tape_id = X.tape_id;
-	copied = true;
+	NUMBER_OF_COPIES[tape_id]++;
 }
 
 Tensor::Tensor(Tensor && X)
@@ -280,10 +291,11 @@ Tensor::Tensor(Tensor && X)
 	X.old_ids.clear();
 }
 
-Tensor & Tensor::operator=(Tensor & X)
+Tensor & Tensor::operator=(const Tensor & X)
 {
 	old_ids.push_back(tape_id);
 	tape_id = X.tape_id;
+	NUMBER_OF_COPIES[tape_id]++;
 	return *this;
 }
 
@@ -442,7 +454,7 @@ void PrintTAPE(bool disp_value)
 	// Iterate through the map
 	while (it != PARENTS_TAPE.end())
 	{
-		std::cout <<"Record_" <<i << " :: " << getOperationName(it2->second) << "(arg1_id = " << it->second.first << ", arg2_id = " << it->second.second << ") " << std::endl;
+		std::cout <<"Record_" << it->first << " :: " << getOperationName(it2->second) << "(arg1_id = " << it->second.first << ", arg2_id = " << it->second.second << ") " << std::endl;
 		if (disp_value)
 		{
 			PrintTensor(it3->second);
@@ -496,114 +508,135 @@ std::vector<int> toposort(int end_node)
 }
 
 //Vector Jacobian product, aka backpropagation derivatives
-std::pair<int, int> VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
+void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 {
 	int id_a = PARENTS_TAPE[out_id].first;
 	int id_b = PARENTS_TAPE[out_id].second;
 	float num;
 	int dim_a, dim_b, rnk, N, DA, DB;
+
+	Tensor P1(id_a), P2(id_b);
 	//-1 means no derivative
 	switch (op)
 	{
-	case Tensor::NONE:
-		return std::pair<int, int>(-1, -1);
 	case Tensor::ADD_T:
-		return std::pair<int, int>(outgrad_id, outgrad_id);
+		AddDerivative(id_a, Tensor(outgrad_id));
+		AddDerivative(id_b, Tensor(outgrad_id));
+		break;
 	case Tensor::SUBS_T:
-		return std::pair<int, int>(outgrad_id, (-Tensor(outgrad_id)).ID());
+		AddDerivative(id_a, Tensor(outgrad_id));
+		AddDerivative(id_b, -Tensor(outgrad_id));
+		break;
 	case Tensor::MUL_T:
-		return std::pair<int, int>((Tensor(outgrad_id)*Tensor(id_b)).ID(), (Tensor(outgrad_id)*Tensor(id_a)).ID());
+		AddDerivative(id_a, Tensor(outgrad_id)*Tensor(id_b));
+		AddDerivative(id_b, Tensor(outgrad_id)*Tensor(id_a));
+		break;
 	case Tensor::DIV_T:
-		return std::pair<int, int>((Tensor(outgrad_id) / Tensor(id_b)).ID(), (-Tensor(outgrad_id)*Tensor(id_a)*( Tensor(id_b) ^ (-2.f) )).ID());
+		AddDerivative(id_a, Tensor(outgrad_id) / Tensor(id_b));
+		AddDerivative(id_b, -Tensor(outgrad_id)*Tensor(id_a)*(Tensor(id_b) ^ (-2.f)));
+		break;
 	case Tensor::NEG:
-		return std::pair<int, int>((-Tensor(outgrad_id)).ID(), -1);
+		AddDerivative(id_a, -Tensor(outgrad_id));
+		break;
 	case Tensor::ADD_N:
 	    num = FLOAT_TAPE[out_id];
-		return std::pair<int, int>(outgrad_id, -1);
+		AddDerivative(id_a, Tensor(outgrad_id));
+		break;
 	case Tensor::SUBS_N:
 		num = FLOAT_TAPE[out_id];
-		return std::pair<int, int>(outgrad_id, -1);
+		AddDerivative(id_a, Tensor(outgrad_id));
+		break;
 	case Tensor::MUL_N:
 		num = FLOAT_TAPE[out_id];
-		return std::pair<int, int>((Tensor(outgrad_id) * num).ID(), -1);
+		AddDerivative(id_a, Tensor(outgrad_id) * num);
+		break;
 	case Tensor::DIV_N:
 		num = FLOAT_TAPE[out_id];
-		return std::pair<int, int>((Tensor(outgrad_id) / num).ID(), -1);
+		AddDerivative(id_a, Tensor(outgrad_id) / num);
+		break;
 	case Tensor::SIN:
-		return std::pair<int, int>((cos(Tensor(id_a))*Tensor(outgrad_id)).ID(), -1);
+		AddDerivative(id_a, cos(Tensor(id_a))*Tensor(outgrad_id));
+		break;
 	case Tensor::COS:
-		return std::pair<int, int>((-sin(Tensor(id_a))*Tensor(outgrad_id)).ID(), -1);
+		AddDerivative(id_a, -sin(Tensor(id_a))*Tensor(outgrad_id));
+		break;
 	case Tensor::TAN:
-		return std::pair<int, int>((Tensor(outgrad_id) * ( cos(Tensor(id_a)) ^ (-2) )).ID(), -1);
+		AddDerivative(id_a, Tensor(outgrad_id) * (cos(Tensor(id_a)) ^ (-2)) );
+		break;
 	case Tensor::LOG:
-		return std::pair<int, int>((Tensor(outgrad_id) / (Tensor(id_a)) ).ID(), -1);
+		AddDerivative(id_a, Tensor(outgrad_id) / Tensor(id_a));
+		break;
 	case Tensor::TANH:
-		return std::pair<int, int>((Tensor(outgrad_id) * (1 - Tensor(out_id) ^ 2)).ID(), -1);
+		AddDerivative(id_a, Tensor(outgrad_id) * (1 - Tensor(out_id) ^ 2));
+		break;
 	case Tensor::POW:
 		num = FLOAT_TAPE[out_id];
-		return std::pair<int, int>((Tensor(outgrad_id) * (Tensor(id_a) ^ (num - 1)) * num).ID(), -1);
+		AddDerivative(id_a, Tensor(outgrad_id) * (Tensor(id_a) ^ (num - 1)) * num);
+		break;
 	case Tensor::EXP:
-		return std::pair<int, int>((Tensor(outgrad_id) * Tensor(out_id)).ID(), -1);
+		AddDerivative(id_a, Tensor(outgrad_id) * Tensor(out_id));
+		break;
 	case Tensor::SUM:
 		rnk = VALUE_TAPE[id_a].GetParam().rank;
 		N = VALUE_TAPE[id_a].GetParam().size[rnk - 1];
-		return std::pair<int, int>((repeat(Tensor(outgrad_id), N).ID()), -1);
+		AddDerivative(id_a, repeat(Tensor(outgrad_id), N));
+		break;
 	case Tensor::MIN_M:
-		return std::pair<int, int>(_if(Tensor(id_a) < Tensor(id_b), Tensor(outgrad_id), 0.f).ID(), _if(Tensor(id_a) > Tensor(id_b), Tensor(outgrad_id), 0.f).ID());
+		AddDerivative(id_a, _if(Tensor(id_a) < Tensor(id_b), Tensor(outgrad_id), 0.f));
+		AddDerivative(id_b, _if(Tensor(id_a) > Tensor(id_b), Tensor(outgrad_id), 0.f));
+		break;
 	case Tensor::MAX_M:
-		return std::pair<int, int>(_if(Tensor(id_a) > Tensor(id_b), Tensor(outgrad_id), 0.f).ID(), _if(Tensor(id_a) < Tensor(id_b), Tensor(outgrad_id), 0.f).ID());
+		AddDerivative(id_a, _if(Tensor(id_a) > Tensor(id_b), Tensor(outgrad_id), 0.f));
+		AddDerivative(id_b, _if(Tensor(id_a) < Tensor(id_b), Tensor(outgrad_id), 0.f));
+		break;
 	case Tensor::MIN_N:
 		num = FLOAT_TAPE[out_id];
-		return std::pair<int, int>(_if(Tensor(id_a) < num, Tensor(outgrad_id), 0.f).ID(), _if(Tensor(id_a) > num, Tensor(outgrad_id), 0.f).ID());
+		AddDerivative(id_a, _if(Tensor(id_a) < num, Tensor(outgrad_id), 0.f));
+		AddDerivative(id_b, _if(Tensor(id_a) > num, Tensor(outgrad_id), 0.f));
+		break;
 	case Tensor::MAX_N:
 		num = FLOAT_TAPE[out_id];
-		return std::pair<int, int>(_if(Tensor(id_a) > num, Tensor(outgrad_id), 0.f).ID(), _if(Tensor(id_a) < num, Tensor(outgrad_id), 0.f).ID());
+		AddDerivative(id_a, _if(Tensor(id_a) > num, Tensor(outgrad_id), 0.f));
+		AddDerivative(id_b, _if(Tensor(id_a) < num, Tensor(outgrad_id), 0.f));
+		break;
 	case Tensor::TRANSPOSE:
 		dim_a = TRANSPOSE_TAPE[out_id].first;
 		dim_b = TRANSPOSE_TAPE[out_id].second;
-		return std::pair<int, int>(transpose(Tensor(outgrad_id), dim_a, dim_b).ID(), -1);
+		AddDerivative(id_a, transpose(Tensor(outgrad_id), dim_a, dim_b));
+		break;
 	case Tensor::DOT:
 		rnk = VALUE_TAPE[id_b].GetParam().rank - 2;
-		DA = dot(Tensor(outgrad_id), transpose(Tensor(id_b))).ID();
-		DB = dot(transpose(Tensor(id_a)), Tensor(outgrad_id)).ID();
+		P1 = dot(Tensor(outgrad_id), transpose(Tensor(id_b)));
+		P2 = dot(transpose(Tensor(id_a)), Tensor(outgrad_id));
 		for (int i = 0; i < rnk; i++) //sum over all redundant dimensions
 		{
-			DA = sum(Tensor(DA)).ID();
+			P1 = sum(Tensor(P1, false));
 		}
-		return std::pair<int, int>(DA, DB);
+		AddDerivative(id_a, P1);
+		AddDerivative(id_b, P2);
+		break;
 	case Tensor::REPEAT:
-		return std::pair<int, int>(sum(Tensor(outgrad_id)).ID(), -1);
+		AddDerivative(id_a, sum(Tensor(outgrad_id)));
+		break;
 	case Tensor::IF_COND:
-		return std::pair<int, int>(-1, _if(Tensor(id_a), Tensor(outgrad_id), 0.f).ID());
+		AddDerivative(id_b, _if(Tensor(id_a), Tensor(outgrad_id), 0.f));
+		break;
 	default:
-		return std::pair<int, int>(-1, -1);
+		break;
 	}
 }
 
 Gradient::Gradient(Tensor END)
 {
 	Tensor outgrad(END, 1.f); //initial gradient
+	dydx[END.ID()] = outgrad;
 
-	std::map<int, int> outgrads;
-	dydx[END.ID()] = outgrad.ID();
-	std::vector<int> sorted = toposort(END.ID());
-	
-	for (auto &node_id : sorted)
+	for (auto &node_id : toposort(END.ID()))
 	{
-		int grad_id = dydx[node_id];
+		int grad_id = dydx[node_id].ID();
 		if (OPERATION_TAPE[node_id] != Tensor::NONE)
 		{
-			std::pair<int, int> out_grads = VJP(grad_id, node_id, OPERATION_TAPE[node_id]);
-
-			if (out_grads.first >= 0) //if gradient available
-			{
-				AddDerivative(PARENTS_TAPE[node_id].first, out_grads.first);
-			}
-
-			if (out_grads.second >= 0)
-			{
-				AddDerivative(PARENTS_TAPE[node_id].second, out_grads.second);
-			}
+			VJP(grad_id, node_id, OPERATION_TAPE[node_id]);
 		}
 	}
 }
@@ -624,16 +657,16 @@ Gradient & Gradient::operator=(Gradient & X)
 	return *this;
 }
 
-Tensor Gradient::wrt(Tensor & X)
+Tensor& Gradient::wrt(Tensor & X)
 {
 	return wrt(X.ID());
 }
 
-Tensor Gradient::wrt(int tensor_id)
+Tensor& Gradient::wrt(int tensor_id)
 {
-	if (VALUE_TAPE.count(dydx[tensor_id]) != 0) //if exists
+	if (dydx.count(tensor_id) != 0) //if exists
 	{
-		return VALUE_TAPE[dydx[tensor_id]];
+		return dydx[tensor_id];
 	}
 	else
 	{
@@ -642,11 +675,11 @@ Tensor Gradient::wrt(int tensor_id)
 }
 
 
-void Gradient::AddDerivative(int pnode, int gnode)
+void Gradient::AddDerivative(int pnode, Tensor gnode)
 {
-	if (dydx.count(pnode) != 0) //if exists
+	if (dydx.count(pnode) != 0) //if a derivative already exists exists
 	{
-		dydx[pnode] = (Tensor(gnode)+Tensor(dydx[pnode])).ID();
+		dydx[pnode] = gnode+dydx[pnode];
 	}
 	else
 	{

@@ -8,6 +8,12 @@ CLFunction idx, sinfun, cosfun, tanfun, tanhfun, powfun, maxfun, minfun, maxfun_
 CLFunction expfun, logfun, transposefun, repeatfun;
 CLFunction sumfun;
 
+TensorCL::TensorCL()
+{
+	host_data = NULL;
+	data = NULL;
+}
+
 void TensorCL::release()
 {
 	if(host_data != NULL)
@@ -111,7 +117,7 @@ TensorCL & TensorCL::operator=(TensorCL && p)
 }
 
 //l-value -> copy
-TensorCL& TensorCL::operator=(TensorCL & X)
+TensorCL& TensorCL::operator=(const TensorCL & X)
 {
 	param = X.param;
 	init_data();
@@ -120,7 +126,7 @@ TensorCL& TensorCL::operator=(TensorCL & X)
 	return *this;
 }
 
-TensorCL::TensorCL(TensorCL &X)
+TensorCL::TensorCL(const TensorCL &X)
 {
 	param = X.param;
 	//if array is temporary - then just copy the CL pointer

@@ -18,7 +18,8 @@ public:
 		TRANSPOSE, DOT, REPEAT, GET_INDEX, IF_COND
 	};
 
-	Tensor(unsigned int x = 1, unsigned int y = 1, unsigned int z = 1, unsigned int w = 1);
+	Tensor();
+	Tensor(unsigned int x, unsigned int y, unsigned int z = 1, unsigned int w = 1);
 	Tensor(cl_tensor param);
 	Tensor(TensorCL& input, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
 	Tensor(int id);
@@ -26,10 +27,10 @@ public:
 
 	~Tensor();
 
-	Tensor(Tensor & X);
+	Tensor(const Tensor & X);
 	Tensor(Tensor && X);
 
-	Tensor& operator=(Tensor &X);
+	Tensor& operator=(const Tensor &X);
 	Tensor& operator=(Tensor &&X);
 	Tensor& operator=(float a);
 
@@ -78,15 +79,15 @@ public:
 
 protected:
 	std::vector<int> FindChilds(int id);
-	void RecursiveDestructionChilds(int id, bool dt = true);
+	void RecursiveDestructionChilds(int id);
 	void RecursiveDestructionParents(int id);
 	bool AreAllChildsDestroyed(int id);
+	void Destroy(int id);
 	void init(TensorCL &X, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
 
 	//the id of this element inside the tape
 	int tape_id;
 	std::vector<int> old_ids;
-	bool copied;
 };
 
 void PrintTAPE(bool disp_value);
@@ -101,10 +102,10 @@ public:
 	Gradient& operator=(Gradient &X);
 
 	//derivative with respect to
-	Tensor wrt(Tensor& X);
-	Tensor wrt(int tensor_id);
+	Tensor& wrt(Tensor& X);
+	Tensor& wrt(int tensor_id);
 protected:
-
-	void AddDerivative(int pnode, int gnode);
-	std::map<int, int> dydx;
+	void VJP(int outgrad_id, int out_id, Tensor::OPERATION op);
+	void AddDerivative(int pnode, Tensor gnode);
+	std::map<int, Tensor> dydx;
 };
