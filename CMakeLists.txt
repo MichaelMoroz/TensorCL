@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project (NeuralNetworkCL VERSION 0.3 DESCRIPTION "An OpenCL tensor library with stuff")
+set(CMAKE_CXX_STANDARD 17)
 
 set(SFML_DIR C:/Libraries/SFML-2.5.1/lib/cmake/SFML)
 set(SFML_LIB_DIR C:/Libraries/SFML-2.5.1/lib)
@@ -21,6 +22,7 @@ include_directories(${GLCL_DIR})
 add_subdirectory(src/OPENCL)
 add_subdirectory(src/CL_TENSOR)
 add_subdirectory(src/PLOT)
+add_subdirectory(src/MD)
 
 configure_file(libparam.pc.in libparam.pc @ONLY)
 					   
@@ -41,6 +43,12 @@ target_include_directories(PLOTTER PUBLIC
   ${ANTTWEAKBAR_DIR}/include
 )
 
+target_include_directories(MD PUBLIC
+  src/CL_TENSOR
+  src/OPENCL
+  src/PLOT
+)
+
 add_executable(NeuralNetworkCL src/Main.cpp)
   
 add_custom_command(TARGET NeuralNetworkCL PRE_BUILD
@@ -53,6 +61,7 @@ target_link_libraries(NeuralNetworkCL
   OPENCL
   CL_TENSOR
   PLOTTER
+  MD
   sfml-system
   sfml-window
   sfml-graphics
