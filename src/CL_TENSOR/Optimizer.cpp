@@ -29,7 +29,7 @@ void Optimizer::Optimization_Cost(Tensor & COST)
 void Optimizer::OptimizationIteration(float dt)
 {
 	iterations++;
-	std::unique_ptr<Gradient> grad;
+	unique_ptr<Gradient> grad;
 	float beta_1 = 0.9f, beta_2 = 0.999f, epsilon = 1e-4f;
 	switch (method_used)
 	{
@@ -55,4 +55,11 @@ void Optimizer::OptimizationIteration(float dt)
 	default:
 		break;
 	}
+}
+
+Optimizer::~Optimizer()
+{
+	OPTIM_TENSORS.clear();
+	moment.clear();
+	second_moment.clear();
 }

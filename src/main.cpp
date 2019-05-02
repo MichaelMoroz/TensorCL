@@ -12,13 +12,13 @@ int main(int argc, char *argv[]) {
 	if (!cl.failed)
 	{
 		TensorUseOpenCL(&cl);
-
-		Tensor A(16, 16), C(16, 16);
+		int N = 512;
+		Tensor A(N, N), C(N, N);
 
 		A = random(A);
 		C = indicies(C, 0) + 3*indicies(C, 1);
-		PrintTensor(A);
-		Optimizer root(Optimizer::ADAM);
+		//PrintTensor(A);
+		Optimizer root(Optimizer::GRAD_DESC);
 		root.AddParameter(A);
 		root.AddParameter(C);
 		
@@ -26,25 +26,27 @@ int main(int argc, char *argv[]) {
 		font.loadFromFile("arialbd.ttf");
 		
 		window.AddEmptyLine(sf::Color::Red, "Tensor B");
+		window.AddEmptyLine(sf::Color::Blue, "TensorTapeSize");
 
 		int i = 0;
 		while (window.open)
 		{
 			i++;
-			if (i < 1000)
+			if (i < 10000)
 			{
 				Tensor B = dot(sin(A - C), cos(C + A)) ^ 2;
 				root.Optimization_Cost(B);
-				root.OptimizationIteration(0.01);
+				root.OptimizationIteration(1.f/(N*N));
 
 				Tensor COST = sum(sum(B));
-				window.AddPointToLine(0, i, COST());
+				window.AddPointToLine(0, i, COST()/(N * N));
 			}
+			window.AddPointToLine(1, i, TAPE_SIZE());
 			window.UpdateState();
 		}
 
-		PrintTensor(A);
-		PrintTensor(C);
+		//PrintTensor(A);
+		//PrintTensor(C);
 		PrintTAPE(false);
 	}
 

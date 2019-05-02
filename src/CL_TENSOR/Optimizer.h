@@ -19,6 +19,8 @@ public:
 	void Optimization_Cost(Tensor &COST); 
 	void OptimizationIteration(float dt);
 
+	~Optimizer();
+
 protected:
 	OPTIMIZATION_METHOD method_used;
 	int cost_id;

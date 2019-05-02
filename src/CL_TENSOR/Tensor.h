@@ -94,6 +94,7 @@ protected:
 };
 
 void PrintTAPE(bool disp_value);
+int TAPE_SIZE();
 
 //backpropagation class
 class Gradient
@@ -107,6 +108,8 @@ public:
 	//derivative with respect to
 	Tensor& wrt(Tensor& X);
 	Tensor& wrt(int tensor_id);
+
+	~Gradient();
 protected:
 	void VJP(int outgrad_id, int out_id, Tensor::OPERATION op);
 	void AddDerivative(int pnode, Tensor gnode);

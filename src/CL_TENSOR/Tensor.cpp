@@ -454,6 +454,11 @@ std::string getOperationName(Tensor::OPERATION op)
 	}
 }
 
+int TAPE_SIZE()
+{
+	return VALUE_TAPE.size();
+}
+
 void PrintTAPE(bool disp_value)
 {
 	std::cout << "TAPE:" << std::endl;
@@ -682,6 +687,11 @@ Tensor& Gradient::wrt(int tensor_id)
 	{
 		return Tensor(tensor_id);
 	}
+}
+
+Gradient::~Gradient()
+{
+	dydx.clear();
 }
 
 

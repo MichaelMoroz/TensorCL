@@ -47,8 +47,7 @@ void TensorCL::init_data(float value)
 	{
 		clEnqueueFillBuffer(CL->queue(), data, &value, sizeof(value), 0, param.length * sizeof(float), 0, 0, 0);
 	}
-
-	host_data = new float[param.length];
+	host_data = NULL;
 }
 
 TensorCL::TensorCL(int r, vector<int> s)
@@ -108,6 +107,7 @@ TensorCL::TensorCL(TensorCL && p)
 
 TensorCL & TensorCL::operator=(TensorCL && p)
 {
+	release();
 	std::swap(this->data, p.data);
 	std::swap(this->host_data, p.host_data);
 	std::swap(this->param, p.param);
@@ -119,6 +119,7 @@ TensorCL & TensorCL::operator=(TensorCL && p)
 //l-value -> copy
 TensorCL& TensorCL::operator=(const TensorCL & X)
 {
+	release();
 	param = X.param;
 	init_data();
 	clEnqueueCopyBuffer(CL->queue(), X.data, data, 0, 0, param.length * sizeof(float), NULL, NULL, NULL);
@@ -473,6 +474,7 @@ void TensorCL::LoadData(float * data_ptr)
 
 float * TensorCL::GetData()
 {
+	host_data = new float[param.length];
 	clEnqueueReadBuffer(CL->queue(), data, CL_TRUE, 0, sizeof(float)*param.length, host_data, NULL, NULL, NULL);
 	return host_data; 
 }
