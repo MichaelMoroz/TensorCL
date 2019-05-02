@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 		while (window.open)
 		{
 			i++;
-			if (i < 100)
+			if (i < 1000)
 			{
 				Tensor B = dot(sin(A - C), cos(C + A)) ^ 2;
 				root.Optimization_Cost(B);
