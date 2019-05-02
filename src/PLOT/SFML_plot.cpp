@@ -480,6 +480,7 @@ SFMLP::SFMLP(int w, int h, float WX, float WY, float lx, float ly) : width(w), h
 {
 	window.create(sf::VideoMode(w, h), "Plot graph");
 	window.setFramerateLimit(60);
+	font.loadFromFile("arialbd.ttf");
 	su.setFont(font);
 	su.setCharacterSize(16);
 }

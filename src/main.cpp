@@ -4,6 +4,21 @@
 
 using namespace std;
 
+//molecular dynamics simulation with neural networks
+class MD_CL
+{
+public:
+	MD_CL();
+	MD_CL(int TypeNum, int N1, int N2);
+	MD_CL(string filename);
+
+	void LoadNNFromFile(string filename);
+	void AddClusterFromFile(string xyzfile);
+
+private:
+
+};
+
 int main(int argc, char *argv[]) {
 	srand(time(NULL));
 
@@ -12,18 +27,17 @@ int main(int argc, char *argv[]) {
 	if (!cl.failed)
 	{
 		TensorUseOpenCL(&cl);
-		int N = 512;
+		int N = 128;
 		Tensor A(N, N), C(N, N);
 
 		A = random(A);
 		C = indicies(C, 0) + 3*indicies(C, 1);
 		//PrintTensor(A);
-		Optimizer root(Optimizer::GRAD_DESC);
+		Optimizer root(Optimizer::ADAM);
 		root.AddParameter(A);
 		root.AddParameter(C);
 		
 		SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
-		font.loadFromFile("arialbd.ttf");
 		
 		window.AddEmptyLine(sf::Color::Red, "Tensor B");
 		window.AddEmptyLine(sf::Color::Blue, "TensorTapeSize");
