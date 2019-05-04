@@ -1,17 +1,17 @@
 #include<SFML_plot.h>
-Font font;
+sf::Font font;
 
 float xm = 1.5;
 
 int colortablesize = 4000;
 
-Color* ColorTable = new Color[colortablesize];
+sf::Color* ColorTable = new sf::Color[colortablesize];
 
 float def_min, def_max;
 
 float log102 = log10f(2);
 
-bool SetDefaultFont(string location)
+bool SetDefaultFont(std::string location)
 {
 	if (font.loadFromFile(location))
 	{
@@ -21,7 +21,7 @@ bool SetDefaultFont(string location)
 }
 
 
-Subscript::Subscript(Color color, string text)
+Subscript::Subscript(sf::Color color, std::string text)
 {
 	str.setFont(font);
 	str.setCharacterSize(24);
@@ -30,7 +30,7 @@ Subscript::Subscript(Color color, string text)
 	visible = 1;
 }
 
-void Subscript::init(Color color, string text)
+void Subscript::init(sf::Color color, std::string text)
 {
 	str.setFont(font);
 	str.setCharacterSize(24);
@@ -39,12 +39,12 @@ void Subscript::init(Color color, string text)
 	visible = 1;
 }
 
-FloatRect Subscript::getGlobalBounds()
+sf::FloatRect Subscript::getGlobalBounds()
 {
 	return str.getGlobalBounds();
 }
 
-void Subscript::ChangeText(string text)
+void Subscript::ChangeText(std::string text)
 {
 	str.setString(text);
 }
@@ -54,7 +54,7 @@ void Subscript::ChangeSize(int sz)
 	str.setCharacterSize(sz);
 }
 
-void Subscript::Draw(RenderWindow *window, float x, float y)
+void Subscript::Draw(sf::RenderWindow *window, float x, float y)
 {
 	str.setPosition(x, y);
 	if (visible)
@@ -95,7 +95,7 @@ double blue(double gray)
 }
 ///MATLAB JET COLORMAP
 
-Color float_to_color(float number, float min, float max)
+sf::Color float_to_color(float number, float min, float max)
 {
 
 	if (number < max && number >= min)
@@ -105,10 +105,10 @@ Color float_to_color(float number, float min, float max)
 		R = scr(red(grayscale));
 		G = 0;
 		B = scr(blue(grayscale));
-		return Color(255 * R, 255 * G, 255 * B);
+		return sf::Color(255 * R, 255 * G, 255 * B);
 	}
-	if (number >= max) return Color(127, 0, 0);
-	if (number < min) return Color(0, 0, 127);
+	if (number >= max) return sf::Color(127, 0, 0);
+	if (number < min) return sf::Color(0, 0, 127);
 }
 
 
@@ -229,7 +229,7 @@ float bluej(float value, float min, float max)
 
 
 
-Color float_to_colorj(float number, float min, float max)
+sf::Color float_to_colorj(float number, float min, float max)
 {
 	if (number < max && number >= min)
 	{
@@ -238,10 +238,10 @@ Color float_to_colorj(float number, float min, float max)
 		R = redj(grayscale, -1, 1);
 		G = greenj(grayscale, -1, 1);
 		B = bluej(grayscale, -1, 1);
-		return Color(R, G, B);
+		return sf::Color(R, G, B);
 	}
-	if (number >= max) return Color(0, 0, 0);
-	if (number < min) return Color(255, 255, 255);
+	if (number >= max) return sf::Color(0, 0, 0);
+	if (number < min) return sf::Color(255, 255, 255);
 }
 
 double asy(double He, double k)
@@ -375,21 +375,21 @@ void updateTablej(float min, float max)
 }
 
 
-Color float2color(float number)
+sf::Color float2color(float number)
 {
 	if (number < def_min)
 	{
 		float k = def_min - number;
 		k *= 2;
 		k = (k*k - 1) / (1 + k * k) + 1;
-		return Color(255, 128 * k, 100 * k);
+		return sf::Color(255, 128 * k, 100 * k);
 	}
 	else if (number > def_max)
 	{
 		float  k = number - def_max;
 		k *= 2;
 		k = (k*k - 1) / (1 + k * k) + 1;
-		return Color(100 * k, 128 * k, 255);
+		return sf::Color(100 * k, 128 * k, 255);
 	}
 	else
 	{
@@ -399,15 +399,15 @@ Color float2color(float number)
 
 }
 
-Color float2colorj(float number)
+sf::Color float2colorj(float number)
 {
 	if (number < def_min)
 	{
-		return Color(0, 0, 0);
+		return sf::Color(0, 0, 0);
 	}
 	else if (number > def_max)
 	{
-		return Color(255, 255, 255);
+		return sf::Color(255, 255, 255);
 	}
 	else
 	{
@@ -424,7 +424,7 @@ void CPU_COLOR_GRAD(sf::Image* img, float** DATA, int dx, int dy)
 #pragma omp parallel for
 		for (int Y = 0; Y < dy; Y++)
 		{
-			Color c = float2color(DATA[X][Y]);
+			sf::Color c = float2color(DATA[X][Y]);
 			img->setPixel(X, Y, c);
 		}
 }
@@ -435,7 +435,7 @@ void CPU_COLOR_GRAD_JET(sf::Image* img, float** DATA, int dx, int dy)
 #pragma omp parallel for
 		for (int Y = 0; Y < dy; Y++)
 		{
-			Color c = float2colorj(DATA[X][Y]);
+			sf::Color c = float2colorj(DATA[X][Y]);
 			img->setPixel(X, Y, c);
 		}
 }
@@ -446,7 +446,7 @@ void CPU_COLOR_GRAD_COMPLEX(sf::Image* img, float** DATAR, float** DATAI, int dx
 #pragma omp parallel for
 		for (int Y = 0; Y < dy; Y++)
 		{
-			Color c = float_to_color_complex(DATAR[X][Y], DATAI[X][Y], 0.6, 3);
+			sf::Color c = float_to_color_complex(DATAR[X][Y], DATAI[X][Y], 0.6, 3);
 			img->setPixel(X, Y, c);
 		}
 }
@@ -457,9 +457,9 @@ void CPU_COLOR_GRAD_2(sf::Image* img, float** DATA1, float** DATA2, int dx, int 
 #pragma omp parallel for
 		for (int Y = 0; Y < dy; Y++)
 		{
-			Color c1 = float2color(DATA1[X][Y]);
-			Color c2 = float2color(DATA2[X][Y]);
-			img->setPixel(X, Y, Color(c1.b, 0, c2.b));
+			sf::Color c1 = float2color(DATA1[X][Y]);
+			sf::Color c2 = float2color(DATA2[X][Y]);
+			img->setPixel(X, Y, sf::Color(c1.b, 0, c2.b));
 		}
 }
 
@@ -469,9 +469,9 @@ void CPU_COLOR_GRAD_3(sf::Image* img, float** DATA1, float** DATA2, int dx, int 
 #pragma omp parallel for
 		for (int Y = 0; Y < dy; Y++)
 		{
-			Color c1 = float2color(DATA1[X][Y]);
-			Color c2 = float2color(std::abs(DATA2[X][Y]));
-			img->setPixel(X, Y, Color(c1.r, c2.b, c1.b));
+			sf::Color c1 = float2color(DATA1[X][Y]);
+			sf::Color c2 = float2color(std::abs(DATA2[X][Y]));
+			img->setPixel(X, Y, sf::Color(c1.r, c2.b, c1.b));
 		}
 }
 
@@ -498,7 +498,7 @@ void SFMLP::SetImage(float**& A, int W, int H, float x0, float y0, float x1, flo
 
 	texture.setSmooth(true);
 
-	mainimg.create(W, H, Color::White);
+	mainimg.create(W, H, sf::Color::White);
 
 	updateTablej(min, max);
 
@@ -509,12 +509,12 @@ void SFMLP::SetImage(float**& A, int W, int H, float x0, float y0, float x1, flo
 	MainSprite.setTexture(texture);
 }
 
-void SFMLP::AddLine(vector<float> X, vector<float> Y, sf::Color C, string S)
+void SFMLP::AddLine(std::vector<float> X, std::vector<float> Y, sf::Color C, std::string S)
 {
 	Lines.emplace_back();
 	int n = Lines.size() - 1;
 	Lines[n].resize(X.size());
-	Lines[n].setPrimitiveType(LinesStrip);
+	Lines[n].setPrimitiveType(sf::LinesStrip);
 	for (int i = 0; i < X.size(); i++)
 	{
 		Lines[n][i].color = C;
@@ -525,12 +525,12 @@ void SFMLP::AddLine(vector<float> X, vector<float> Y, sf::Color C, string S)
 	Lines_y.push_back(Y);
 }
 
-void SFMLP::AddEmptyLine(sf::Color C, string S)
+void SFMLP::AddEmptyLine(sf::Color C, std::string S)
 {
 	Lines.emplace_back();
 	int n = Lines.size() - 1;
 	Lines[n].resize(0);
-	Lines[n].setPrimitiveType(LinesStrip);
+	Lines[n].setPrimitiveType(sf::LinesStrip);
 	Lines_legend.push_back(S);
 	Lines_color.push_back(C);
 	Lines_x.emplace_back();
@@ -552,10 +552,10 @@ void SFMLP::AddPointToLine(int l, float x, float y)
 
 void SFMLP::UpdateState()
 {
-	window.clear(Color::Black);
+	window.clear(sf::Color::Black);
 	frame++;
-	sf::Vector2i dmouse = Mouse::getPosition(window) - mouse_prev;
-	mouse_prev = Mouse::getPosition(window);
+	sf::Vector2i dmouse = sf::Mouse::getPosition(window) - mouse_prev;
+	mouse_prev = sf::Mouse::getPosition(window);
 
 	//the change in mouse position
 	float mdx = dmouse.x * w_x / (float)width;
@@ -597,12 +597,12 @@ void SFMLP::UpdateState()
 		}
 	}
 
-	if (Keyboard::isKeyPressed(Keyboard::K))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::K))
 	{
 		w_x *= 1.01;
 		w_y *= 1.01;
 	}
-	if (Keyboard::isKeyPressed(Keyboard::L))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::L))
 	{
 		w_x *= 0.99;
 		w_y *= 0.99;
@@ -629,7 +629,7 @@ void SFMLP::UpdateState()
 		{
 			int x = (Lines_x[i][j] - l_x)*width / w_x + width * 0.5;
 			int y = -(Lines_y[i][j] - l_y)*height / w_y + height * 0.5;
-			Lines[i][j].position = Vector2f(x, y);
+			Lines[i][j].position = sf::Vector2f(x, y);
 		}
 		window.draw(Lines[i]);
 	}
@@ -640,20 +640,20 @@ void SFMLP::UpdateState()
 
 //attention: shitcode ahead
 
-void SFMLP::DrawAxis(float x0, float x1, float y0, float y1, Color C)
+void SFMLP::DrawAxis(float x0, float x1, float y0, float y1, sf::Color C)
 {
-	Yaxis[0].position = Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0), 0);
-	Yaxis[1].position = Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0), height);
-	Xaxis[0].position = Vector2f(0, height / 2 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
-	Xaxis[1].position = Vector2f(width, height / 2 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
+	Yaxis[0].position = sf::Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0), 0);
+	Yaxis[1].position = sf::Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0), height);
+	Xaxis[0].position = sf::Vector2f(0, height / 2 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
+	Xaxis[1].position = sf::Vector2f(width, height / 2 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
 	Yaxis[0].color = C;
 	Yaxis[1].color = C;
 	Xaxis[0].color = C;
 	Xaxis[1].color = C;
-	OneY[0].position = Vector2f(width / 2 - ((x1 + x0) / 2 - 1)*(double)width / (x1 - x0), height / 2 - 5 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
-	OneY[1].position = Vector2f(width / 2 - ((x1 + x0) / 2 - 1)*(double)width / (x1 - x0), height / 2 + 5 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
-	OneX[0].position = Vector2f(width / 2 + 5 - ((x1 + x0) / 2)*(double)width / (x1 - x0), height / 2 + ((y0 + y1) / 2 - 1)*(double)height / (y1 - y0));
-	OneX[1].position = Vector2f(width / 2 - 5 - ((x1 + x0) / 2)*(double)width / (x1 - x0), height / 2 + ((y0 + y1) / 2 - 1)*(double)height / (y1 - y0));
+	OneY[0].position = sf::Vector2f(width / 2 - ((x1 + x0) / 2 - 1)*(double)width / (x1 - x0), height / 2 - 5 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
+	OneY[1].position = sf::Vector2f(width / 2 - ((x1 + x0) / 2 - 1)*(double)width / (x1 - x0), height / 2 + 5 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
+	OneX[0].position = sf::Vector2f(width / 2 + 5 - ((x1 + x0) / 2)*(double)width / (x1 - x0), height / 2 + ((y0 + y1) / 2 - 1)*(double)height / (y1 - y0));
+	OneX[1].position = sf::Vector2f(width / 2 - 5 - ((x1 + x0) / 2)*(double)width / (x1 - x0), height / 2 + ((y0 + y1) / 2 - 1)*(double)height / (y1 - y0));
 	OneX[0].color = C;
 	OneX[1].color = C;
 	OneY[0].color = C;
@@ -662,26 +662,26 @@ void SFMLP::DrawAxis(float x0, float x1, float y0, float y1, Color C)
 	window.draw(Yaxis, 2, sf::Lines);
 	window.draw(OneX, 2, sf::Lines);
 	window.draw(OneY, 2, sf::Lines);
-	Yaxis[0].position = Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0), 0);
-	Yaxis[1].position = Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0) + 15, 15);
-	Xaxis[0].position = Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0), 0);
-	Xaxis[1].position = Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0) - 15, 15);
+	Yaxis[0].position = sf::Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0), 0);
+	Yaxis[1].position = sf::Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0) + 15, 15);
+	Xaxis[0].position = sf::Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0), 0);
+	Xaxis[1].position = sf::Vector2f(width / 2 - ((x1 + x0) / 2)*(double)width / (x1 - x0) - 15, 15);
 	window.draw(Xaxis, 2, sf::Lines);
 	window.draw(Yaxis, 2, sf::Lines);
-	Xaxis[0].position = Vector2f(width, height / 2 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
-	Xaxis[1].position = Vector2f(width - 15, height / 2 + 15 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
-	Yaxis[0].position = Vector2f(width, height / 2 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
-	Yaxis[1].position = Vector2f(width - 15, height / 2 - 15 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
+	Xaxis[0].position = sf::Vector2f(width, height / 2 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
+	Xaxis[1].position = sf::Vector2f(width - 15, height / 2 + 15 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
+	Yaxis[0].position = sf::Vector2f(width, height / 2 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
+	Yaxis[1].position = sf::Vector2f(width - 15, height / 2 - 15 + ((y0 + y1) / 2)*(double)height / (y1 - y0));
 	window.draw(Xaxis, 2, sf::Lines);
 	window.draw(Yaxis, 2, sf::Lines);
 }
 
-void SFMLP::DrawGrid(float x0, float x1, float y0, float y1, Color C, Color Te)
+void SFMLP::DrawGrid(float x0, float x1, float y0, float y1, sf::Color C, sf::Color Te)
 {
 	float dex = x1 - x0, dey = y1 - y0;
 	float dx = expf(logf(10)*(float)floorf(log10f(dex)))*(float)width / (4 * dex);
 	float dy = expf(logf(10)*(float)floorf(log10f(dey)))*(float)height / (4 * dey);
-	dx = min(dx, dy);
+	dx = std::min(dx, dy);
 	dy = dx;
 	float nx = ((float)width) / dx, ny = ((float)height) / dy;
 	float dxr = dex / nx, dyr = dey / ny;
@@ -691,8 +691,8 @@ void SFMLP::DrawGrid(float x0, float x1, float y0, float y1, Color C, Color Te)
 	su.setColor(Te);
 	for (int i = 0; i < nx + 1; i++)
 	{
-		Yaxis[0].position = Vector2f(-sx + dx * i, 0);
-		Yaxis[1].position = Vector2f(-sx + dx * i, height);
+		Yaxis[0].position = sf::Vector2f(-sx + dx * i, 0);
+		Yaxis[1].position = sf::Vector2f(-sx + dx * i, height);
 		window.draw(Yaxis, 2, sf::Lines);
 		su.setPosition(-sx + dx * i + 5, height / 2 + ((y0 + y1) / 2)*(double)height / dey + 5);
 		su.setString(num2str((floorf(x0 / dxr) + i)*dxr));
@@ -700,8 +700,8 @@ void SFMLP::DrawGrid(float x0, float x1, float y0, float y1, Color C, Color Te)
 	}
 	for (int i = 0; i < ny + 1; i++)
 	{
-		Yaxis[0].position = Vector2f(0, sy + dy * i);
-		Yaxis[1].position = Vector2f(width, sy + dy * i);
+		Yaxis[0].position = sf::Vector2f(0, sy + dy * i);
+		Yaxis[1].position = sf::Vector2f(width, sy + dy * i);
 		window.draw(Yaxis, 2, sf::Lines);
 		su.setPosition(width / 2 - ((x1 + x0) / 2)*(double)width / dex + 5, sy + dy * i + 5);
 		su.setString(num2str((floorf(y1 / dyr) - i)*dyr));

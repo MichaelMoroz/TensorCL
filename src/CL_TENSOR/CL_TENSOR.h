@@ -3,8 +3,6 @@
 #include <vector>
 #include <iomanip>
 
-using namespace std;
-
 constexpr auto MAX_DIM = 8;
 constexpr auto TS = 8;
 
@@ -14,7 +12,7 @@ constexpr auto TS = 8;
 #pragma pack(push, r1, 1)
 typedef struct
 {
-	cl_int size[MAX_DIM] = {1};
+	cl_int size[MAX_DIM] = {1, 1, 1, 1, 1, 1, 1, 1};
 	cl_int rank = 1;
 	cl_int length = 1;
 } cl_tensor;
@@ -36,16 +34,34 @@ cl_tensor GetSumTensor(cl_tensor x);
 cl_tensor Repeat(cl_tensor x, int n); 
 void TensorUseOpenCL(OpenCL* cl);
 
+class TensorData
+{
+public:
+	TensorData(int a = 1, int b = 1, int c = 1, int d = 1);
+
+	void LoadData(std::vector< std::vector< std::vector<float> > > A);
+	void LoadData(std::vector< std::vector<float> > B);
+	void LoadData(std::vector<float> B);
+
+	cl_tensor GetParam();
+	float* GetData();
+
+private:
+	std::unique_ptr<float> data;
+	cl_tensor param;
+};
+
 class TensorCL
 {
 public:
-	TensorCL(int r, vector<int> s); 
+	TensorCL(int r, std::vector<int> s); 
 	TensorCL(int x, int y, int z = 1, int w = 1); 
 	TensorCL(cl_tensor p);
 
 	TensorCL(const TensorCL & X);
 	TensorCL(TensorCL & X, float fill);
 	TensorCL(TensorCL&& X);
+	TensorCL(TensorData & D);
 
 	TensorCL& operator=(const TensorCL &X);
 	TensorCL& operator=(TensorCL&& X);

@@ -24,6 +24,7 @@ public:
 	Tensor(TensorCL& input, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
 	Tensor(int id);
 	Tensor(Tensor& x, float fill);
+	Tensor(TensorData & A);
 
 	~Tensor();
 
@@ -60,6 +61,7 @@ public:
 	Tensor log();
 	Tensor tanh();
 	Tensor operator^(float y); //power
+	int operator[] (int dim);
 
 	Tensor sum();
 	Tensor min(Tensor &X);

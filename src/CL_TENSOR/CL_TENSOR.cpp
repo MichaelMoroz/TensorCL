@@ -40,7 +40,7 @@ void TensorCL::init_data(float value)
 
 	if (status != CL_SUCCESS)
 	{
-		string err = "OpenCL error: " + getOpenCLError(status);
+		std::string err = "OpenCL error: " + getOpenCLError(status);
 		ERROR_MSG(err.c_str());
 	}
 	else
@@ -50,7 +50,7 @@ void TensorCL::init_data(float value)
 	host_data = NULL;
 }
 
-TensorCL::TensorCL(int r, vector<int> s)
+TensorCL::TensorCL(int r, std::vector<int> s)
 {
 	param.rank = r;
 	std::copy(s.begin(), s.end(), param.size);
@@ -103,6 +103,13 @@ TensorCL::TensorCL(TensorCL && p)
 	std::swap(this->param, p.param);
 	p.data = NULL;
 	p.host_data = NULL;
+}
+
+TensorCL::TensorCL(TensorData & D)
+{
+	param = D.GetParam();
+	init_data();
+	clEnqueueWriteBuffer(CL->queue(), data, CL_TRUE, 0, sizeof(float)*param.length, D.GetData(), NULL, NULL, NULL);
 }
 
 TensorCL & TensorCL::operator=(TensorCL && p)
@@ -520,6 +527,10 @@ cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b)
 	int buf = x.size[dim_a];
 	x.size[dim_a] = x.size[dim_b];
 	x.size[dim_b] = buf;
+	if (std::max(dim_a, dim_b) > x.rank)
+	{
+		x.rank = std::max(dim_a, dim_b);
+	}
 	return x;
 }
 
@@ -742,7 +753,6 @@ bool AreTensorsEqual(cl_tensor x, cl_tensor y)
 	{
 		equal = equal && (x.size[i] == y.size[i]);
 	}
-	equal = equal && (x.rank == y.rank);
 	equal = equal && (x.length == y.length);
 	return equal;
 }
@@ -777,4 +787,81 @@ cl_tensor TensorDotResult(cl_tensor x, cl_tensor y)
 int GetIndex(cl_index id, cl_tensor param)
 {
 	return 0;
+}
+
+TensorData::TensorData(int x, int y, int z, int w)
+{
+	param.size[0] = x;
+	param.size[1] = y;
+	param.size[2] = z;
+	param.size[3] = w;
+
+	param.rank = 1;
+
+	if (y > 1)
+	{
+		param.rank = 2;
+	}
+
+	if (z > 1)
+	{
+		param.rank = 3;
+	}
+
+	if (w > 1)
+	{
+		param.rank = 4;
+	}
+
+	param.length = 1;
+	for (int i = 0; i < param.rank; i++)
+	{
+		param.length *= param.size[i];
+	}
+
+	data.reset(new float[param.length]);
+	std::fill(data.get(), data.get() + param.length, 0.f);
+}
+
+void TensorData::LoadData(std::vector< std::vector< std::vector<float> > > A)
+{
+	if (A.size() == param.size[2] && A[0].size() == param.size[1] && A[0][0].size() == param.size[0])
+	{
+		for (auto i = 0; i < A.size(); i++)
+		{
+			for (auto j = 0; j < A[i].size(); j++)
+			{
+				std::copy(A[i][j].begin(), A[i][j].end(), data.get() + A[i].size()*i + A[i][j].size()*j);
+			}
+		}
+	}
+}
+
+void TensorData::LoadData(std::vector< std::vector<float> > A)
+{
+	if (A.size() == param.size[0] && A[0].size() == param.size[1])
+	{
+		for (auto i = 0; i < A.size(); i++)
+		{
+			std::copy(A[i].begin(), A[i].end(), data.get() + A[i].size()*i);
+		}
+	}
+}
+
+void TensorData::LoadData(std::vector<float> A)
+{
+	if (A.size() == param.size[0])
+	{
+		std::copy(A.begin(), A.end(), data.get());
+	}
+}
+
+cl_tensor TensorData::GetParam()
+{
+	return param;
+}
+
+float * TensorData::GetData()
+{
+	return data.get();
 }

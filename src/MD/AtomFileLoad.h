@@ -6,11 +6,203 @@
 #include <filesystem>
 
 
-using namespace std;
 namespace fs = std::filesystem;
 
+
+float random()
+{
+	return (rand() / (float)(RAND_MAX - 1));
+}
+
+
+/*
+//box-muller gausian random numbers
+float randomn(float d)
+{
+	return d * sqrt(2 * abs(log(random() + 1e-2)))*cos(2 * 3.14159*random());
+}
+*/
+
+float randd(float a, float b)
+{
+	return random()*(b - a) + a;
+}
+
+float randomd(float a)
+{
+	return 2 * a*(random() - 0.5);
+}
+
+struct float3
+{
+	float x;
+	float y;
+	float z;
+
+	float3()
+	{
+		x = 0;
+		y = 0;
+		z = 0;
+	}
+
+	float3(std::vector<float> a)
+	{
+		x = a[0];
+		y = a[1];
+		z = a[2];
+	}
+
+
+
+	void operator=(float3 b)
+	{
+		(*this).x = b.x;
+		(*this).y = b.y;
+		(*this).z = b.z;
+	}
+
+	float& operator[](int b)
+	{
+		switch (b)
+		{
+		case 0: return x;
+		case 1: return y;
+		case 2: return z;
+		}
+	}
+};
+
+struct mat3
+{
+	float a[3][3];
+};
+
+float3 rrd()
+{
+	float3 a;
+	a.x = randd(-0.5, 0.5);
+	a.y = randd(-0.5, 0.5);
+	a.z = randd(-0.5, 0.5);
+	return a;
+}
+
+std::vector<float> get_vec(float3 a)
+{
+	std::vector<float> out;
+	out.push_back(a.x);
+	out.push_back(a.y);
+	out.push_back(a.z);
+	return out;
+}
+
+
+
+float3 operator+(float3 a, float3 b)
+{
+	float3 c;
+	c.x = a.x + b.x;
+	c.y = a.y + b.y;
+	c.z = a.z + b.z;
+	return c;
+}
+
+float3 operator-(float3 a, float3 b)
+{
+	float3 c;
+	c.x = a.x - b.x;
+	c.y = a.y - b.y;
+	c.z = a.z - b.z;
+	return c;
+}
+
+float operator*(float3 a, float3 b)
+{
+	return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+
+
+float3 operator*(float3 a, float b)
+{
+	float3 c;
+	c.x = a.x*b;
+	c.y = a.y*b;
+	c.z = a.z*b;
+	return c;
+}
+
+float3 operator*(float b, float3 a)
+{
+	float3 c;
+	c.x = a.x*b;
+	c.y = a.y*b;
+	c.z = a.z*b;
+	return c;
+}
+
+//matrix vector multiplication
+float3 operator*(mat3 A, float3 B)
+{
+	float3 C;
+	C.x = A.a[0][0] * B.x + A.a[0][1] * B.y + A.a[0][2] * B.z;
+	C.y = A.a[1][0] * B.x + A.a[1][1] * B.y + A.a[1][2] * B.z;
+	C.z = A.a[2][0] * B.x + A.a[2][1] * B.y + A.a[2][2] * B.z;
+	return C;
+}
+
+float length(float3 a)
+{
+	return sqrt(a*a);
+}
+
+float3 normalize(float3 a)
+{
+	return a * (1 / length(a));
+}
+
+float3 rrdn()
+{
+	float3 a;
+	a.x = randd(-0.5, 0.5);
+	a.y = randd(-0.5, 0.5);
+	a.z = randd(-0.5, 0.5);
+	return a * (1 / length(a));
+}
+
+mat3 RotMat(float angle, float3 axis)
+{
+	mat3 rotationMatrix;
+	float u = axis.x, v = axis.y, w = axis.z;
+	float L = (u*u + v * v + w * w);
+	angle = angle * 3.14159 / 180.0; //converting to radian value
+	float u2 = u * u;
+	float v2 = v * v;
+	float w2 = w * w;
+
+	rotationMatrix.a[0][0] = (u2 + (v2 + w2) * cos(angle)) / L;
+	rotationMatrix.a[0][1] = (u * v * (1 - cos(angle)) - w * sqrt(L) * sin(angle)) / L;
+	rotationMatrix.a[0][2] = (u * w * (1 - cos(angle)) + v * sqrt(L) * sin(angle)) / L;
+
+	rotationMatrix.a[1][0] = (u * v * (1 - cos(angle)) + w * sqrt(L) * sin(angle)) / L;
+	rotationMatrix.a[1][1] = (v2 + (u2 + w2) * cos(angle)) / L;
+	rotationMatrix.a[1][2] = (v * w * (1 - cos(angle)) - u * sqrt(L) * sin(angle)) / L;
+
+	rotationMatrix.a[2][0] = (u * w * (1 - cos(angle)) - v * sqrt(L) * sin(angle)) / L;
+	rotationMatrix.a[2][1] = (v * w * (1 - cos(angle)) + u * sqrt(L) * sin(angle)) / L;
+	rotationMatrix.a[2][2] = (w2 + (u2 + v2) * cos(angle)) / L;
+
+	return rotationMatrix;
+}
+
+float3 rotate(mat3 rm, float3 x)
+{
+	return rm * x;
+}
+
+
 //atom charges
-float a2c(string a)
+float a2c(std::string a)
 {
 	if (a == "H")
 	{
@@ -142,7 +334,7 @@ float a2c(string a)
 	}
 }
 
-string c2a(int a)
+std::string c2a(int a)
 {
 	if (a == 8)
 	{
@@ -156,7 +348,6 @@ string c2a(int a)
 	{
 		return "N//A";
 	}
-	
 }
 
 float c2m(int a)
@@ -175,10 +366,17 @@ float c2m(int a)
 	}
 }
 
-//get path vector of all files of given type
-vector<fs::path> GetFilesInFolder(string folder, string filetype)
+struct Cluster
 {
-	vector<fs::path> paths;
+	float Energy, BindingEnergy, HOMO, LUMO, SmearingEnergy;
+	std::vector< float > atom_id;
+	std::vector< std::vector<float> > atom_coords;
+};
+
+//get path vector of all files of given type
+std::vector<fs::path> GetFilesInFolder(std::string folder, std::string filetype)
+{
+	std::vector<fs::path> paths;
 
 	for (const auto & entry : fs::directory_iterator(folder))
 	{
@@ -192,203 +390,60 @@ vector<fs::path> GetFilesInFolder(string folder, string filetype)
 	return paths;
 }
 
-
-vector<vector<float>> XYZ_ForceEnergy_Load(string filename)
+Cluster XYZ_Load(std::string filename)
 {
-	vector<vector<float>> c_xyz_grad_e;
-	vector<vector<float>> c_xyz;
-	vector<vector<float>> grad_e;
-	ifstream file(filename.c_str());
-	string line; 
+	Cluster DATA;
+	std::ifstream file(filename);
+	std::string line;
 	int j = 0;
 	int N = 0;
-	float E = 0;
 	while (getline(file, line))
 	{
 		j++;
 		int i = 0;
-		if (j == 2)
-		{
-			std::replace(line.begin(), line.end(), ';', ' ');
-			std::replace(line.begin(), line.end(), '[', ' ');
-			std::replace(line.begin(), line.end(), ',', ' ');
-			std::replace(line.begin(), line.end(), ']', ' ');
-		}
-			
-		istringstream iss(line);
+
+		std::istringstream iss(line);
 		//atom num
 		if (j == 1)
 		{
 			iss >> N;
 		}
-		//atom configuration energy and forces
+		//energy and stuff
 		else if (j == 2)
-		{
-			iss >> E;
-		
-			for (int k = 0; k < N; k++)
-			{	
-				vector<float> G;
-				for (int p = 0; p < 3; p++)
-				{
-					float num=0;
-					iss >> num;
-					G.push_back(num*kcalmol_in_eV);
-				}
-				G.push_back(E*kcalmol_in_eV);
-				grad_e.push_back(G);
-			}	
+		{	
+			iss >> DATA.Energy;
+			iss >> DATA.BindingEnergy;
+			iss >> DATA.HOMO;
+			iss >> DATA.LUMO;
+			iss >> DATA.SmearingEnergy;
 		}
 		//atom coordinates and type
 		else
 		{
-			string Atom;
-			iss >> Atom;
+			std::string Atom; iss >> Atom;
 			float charge = a2c(Atom); //get atom charge
-			float num;
-			vector<float> cxyz;
-			cxyz.push_back(charge);
+			DATA.atom_id.push_back(charge);
+
+			std::vector<float> cxyz; float num;
 			for (int k = 0; k < 3; k++)
 			{
 				iss >> num;
 				cxyz.push_back(num);
 			}
-			c_xyz.push_back(cxyz);
+			DATA.atom_coords.push_back(cxyz);
 		}
 	}
-
-	for (int i = 0; i < c_xyz.size(); i++)
-	{
-		std::vector<float> AB = c_xyz[i];
-		AB.insert(AB.end(), grad_e[i].begin(), grad_e[i].end());
-
-		c_xyz_grad_e.push_back(AB);
-	}
-
-	return c_xyz_grad_e;
+	return DATA;
 }
 
-vector<vector<float>> XYZF_Load(string filename)
+Cluster RandomRotateCluster(Cluster CC)
 {
-	vector<vector<float>> c_xyz_grad_e;
-	vector<vector<float>> c_xyz;
-	vector<vector<float>> grad_e;
-	ifstream file(filename.c_str());
-	string line;
-	int j = 0;
-	int N = 0;
-	float E = 0;
-	while (getline(file, line))
+	int N = CC.atom_coords.size();
+	mat3 rotmat = RotMat(3.14159f*randd(-1, 1), rrd());
+	for (auto i = 0; i < N; i++)
 	{
-		j++;
-		int i = 0;
-
-		istringstream iss(line);
-		//atom num
-		if (j == 1)
-		{
-			iss >> N;
-		}
-		//??
-		else if (j == 2)
-		{
-		}
-		//atom coordinates and type
-		else
-		{
-			string Atom;
-			iss >> Atom;
-			float charge = a2c(Atom); //get atom charge
-			float num;
-			vector<float> cxyz, grade;
-			cxyz.push_back(charge);
-			for (int k = 0; k < 3; k++)
-			{
-				iss >> num;
-				cxyz.push_back(num);
-			}
-			for (int k = 0; k < 3; k++)
-			{
-				iss >> num;
-				grade.push_back(num);
-			}
-			grade.push_back(E);
-			c_xyz.push_back(cxyz);
-			grad_e.push_back(grade);
-		}
+		float3 X(CC.atom_coords[i]);
+		CC.atom_coords[i] = get_vec(rotmat*X);
 	}
-
-	for (int i = 0; i < c_xyz.size(); i++)
-	{
-		std::vector<float> AB = c_xyz[i];
-		AB.insert(AB.end(), grad_e[i].begin(), grad_e[i].end());
-
-		c_xyz_grad_e.push_back(AB);
-	}
-
-	return c_xyz_grad_e;
-}
-
-
-vector<vector<float>> XYZ_Load(string filename)
-{
-	vector<vector<float>> c_xyz;
-	ifstream file(filename.c_str());
-	string line;
-	int j = 0;
-	int N = 0;
-	float3 center;
-	while (getline(file, line))
-	{
-		j++;
-		int i = 0;
-
-		istringstream iss(line);
-		//atom num
-		if (j == 1)
-		{
-			iss >> N;
-		}
-		//??
-		else if (j == 2)
-		{
-		}
-		//atom coordinates and type
-		else
-		{
-			string Atom;
-			iss >> Atom;
-			float charge = a2c(Atom); //get atom charge
-			float num;
-			vector<float> cxyz;
-			cxyz.push_back(charge);
-			for (int k = 0; k < 3; k++)
-			{
-				iss >> num;
-				cxyz.push_back(num);
-			}
-			c_xyz.push_back(cxyz);
-		}
-	}
-
-	//set the center at the center of mass
-	for (int i = 0; i < N; i++)
-	{
-		float3 ac;
-		ac[0] = c_xyz[i][1];
-		ac[1] = c_xyz[i][2];
-		ac[2] = c_xyz[i][3];
-		center = center + ac;
-	}
-
-	center = center*(1.f / N);
-
-	for (int i = 0; i < N; i++)
-	{
-		c_xyz[i][1] -= center[0] + 0*randd(-0.3,0.3);
-		c_xyz[i][2] -= center[1] + 0*randd(-0.3, 0.3);
-		c_xyz[i][3] -= center[2] + 0*randd(-0.3, 0.3);
-	}
-
-	return c_xyz;
+	return CC;
 }

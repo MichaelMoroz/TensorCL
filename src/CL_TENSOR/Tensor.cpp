@@ -48,6 +48,11 @@ Tensor::Tensor(Tensor & x, float fill)
 	*this = Tensor(TensorCL(VALUE_TAPE[x.tape_id], fill), std::pair<int,int>(x.tape_id, -1), NOT);
 }
 
+Tensor::Tensor(TensorData & A)
+{
+	*this = Tensor(TensorCL(A), std::pair<int, int>(-1, -1), NONE);
+}
+
 void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 {
 	tape_id = idt;
@@ -108,6 +113,11 @@ Tensor Tensor::operator^(float y)
 	{
 		return Tensor(VALUE_TAPE[this->tape_id] ^ y, std::pair<int, int>(this->tape_id, -1), POW);
 	}
+}
+
+int Tensor::operator[](int dim)
+{
+	return GetTensor().GetParam().size[dim];
 }
 
 Tensor Tensor::sum()

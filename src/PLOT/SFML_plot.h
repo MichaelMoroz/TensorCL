@@ -6,10 +6,7 @@
 #include <sstream>
 #include <SFML/Graphics.hpp>
 
-using namespace sf;
-using namespace std;
-
-extern Font font;
+extern sf::Font font;
 
 template < typename T > std::string num2str(const T& n)
 {
@@ -20,30 +17,30 @@ template < typename T > std::string num2str(const T& n)
 
 
 //Text
-bool SetDefaultFont(string location);
+bool SetDefaultFont(std::string location);
 
 class Subscript
 {
 private:
 	bool visible;
-	Text str;
+	sf::Text str;
 
 public:
 	Subscript()
 	{}
 
 
-	Subscript(Color color, string text);
+	Subscript(sf::Color color, std::string text);
 
-	void init(Color color, string text);
+	void init(sf::Color color, std::string text);
 
-	FloatRect getGlobalBounds();
+	sf::FloatRect getGlobalBounds();
 
-	void ChangeText(string text);
+	void ChangeText(std::string text);
 
 	void ChangeSize(int sz);
 
-	void Draw(RenderWindow *window, float x, float y);
+	void Draw(sf::RenderWindow *window, float x, float y);
 
 };
 
@@ -63,7 +60,7 @@ double blue(double gray);
 
 ///MATLAB JET COLORMAP
 
-Color float_to_color(float number, float min, float max);
+sf::Color float_to_color(float number, float min, float max);
 
 void updateTable(float min, float max);
 
@@ -77,7 +74,7 @@ float greenj(float value, float min, float max);
 
 float bluej(float value, float min, float max);
 
-Color float_to_colorj(float number, float min, float max);
+sf::Color float_to_colorj(float number, float min, float max);
 
 double asy(double He, double k);
 
@@ -93,9 +90,9 @@ sf::Color float_to_color_complex(float number_real, float number_complex, float 
 
 void updateTablej(float min, float max);
 
-Color float2color(float number);
+sf::Color float2color(float number);
 
-Color float2colorj(float number);
+sf::Color float2colorj(float number);
 
 void CPU_COLOR_GRAD(sf::Image* img, float** DATA, int dx, int dy);
 
@@ -111,11 +108,11 @@ class SFMLP
 {
 private:
 	int width, height;
-	RenderWindow window;
-	vector<VertexArray> Lines;
-	vector< vector<float> > Lines_x, Lines_y;
-	vector<sf::Color> Lines_color;
-	vector<string> Lines_legend;
+	sf::RenderWindow window;
+	std::vector<sf::VertexArray> Lines;
+	std::vector<  std::vector<float> > Lines_x, Lines_y;
+	std::vector<sf::Color> Lines_color;
+	std::vector< std::string> Lines_legend;
 	sf::Vector2i mouse_prev;
 	int frame, touch;
 	sf::Vertex Yaxis[2], Xaxis[2], OneX[2], OneY[2];
@@ -124,9 +121,9 @@ private:
 	bool imageset;
 	int imgX, imgY;
 	float imgx0, imgy0, imgx1, imgy1;
-	Texture texture;
+	sf::Texture texture;
 	sf::Image mainimg;
-	Sprite MainSprite;
+	sf::Sprite MainSprite;
 	sf::Text su;
 
 public:
@@ -140,9 +137,9 @@ public:
 
 	void SetImage(float**& A, int W, int H, float x0, float y0, float x1, float y1, float min, float max);
 
-	void AddLine(vector<float> X, vector<float> Y, sf::Color C, string S);
+	void AddLine(std::vector<float> X, std::vector<float> Y, sf::Color C, std::string S);
 
-	void AddEmptyLine(sf::Color C, string S);
+	void AddEmptyLine(sf::Color C, std::string S);
 
 	void AddPointToLine(int l, float x, float y);
 
@@ -150,7 +147,7 @@ public:
 
 	//attention: shitcode ahead
 
-	void DrawAxis(float x0, float x1, float y0, float y1, Color C);
+	void DrawAxis(float x0, float x1, float y0, float y1, sf::Color C);
 
-	void DrawGrid(float x0, float x1, float y0, float y1, Color C, Color Te);
+	void DrawGrid(float x0, float x1, float y0, float y1, sf::Color C, sf::Color Te);
 };

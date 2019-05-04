@@ -47,6 +47,9 @@ target_include_directories(MD PUBLIC
   src/CL_TENSOR
   src/OPENCL
   src/PLOT
+  src/MD
+  ${SFML_INCLUDE_DIR}
+  ${ANTTWEAKBAR_DIR}/include
 )
 
 add_executable(NeuralNetworkCL src/Main.cpp)

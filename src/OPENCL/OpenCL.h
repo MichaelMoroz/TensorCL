@@ -18,9 +18,6 @@
 #define ERROR_MSG(x) std::cerr << x << std::endl;
 #endif
 
-using namespace cl;
-using namespace std;
-
 template < typename T > std::string num_to_str(const T& n)
 {
 	std::ostringstream stm;
@@ -28,9 +25,7 @@ template < typename T > std::string num_to_str(const T& n)
 	return stm.str();
 }
 
-
-
-template<class gen_int> string getOpenCLError(gen_int error)
+template<class gen_int>  std::string getOpenCLError(gen_int error)
 {
 	cl_int ERR = error;
 	switch (ERR) {
@@ -112,13 +107,13 @@ template<class gen_int> string getOpenCLError(gen_int error)
 class OpenCL
 {
 public:
-	Device default_device;
+	cl::Device default_device;
 	cl::Context default_context;
-	Program default_program;
-	Platform default_platform;
+	cl::Program default_program;
+	cl::Platform default_platform;
 	cl::CommandQueue queue;
-	vector<std::size_t> group_size;
-	string device_name, device_extensions;
+	std::vector<std::size_t> group_size;
+	std::string device_name, device_extensions;
 	bool failed;
 
 	void operator = (OpenCL A)
@@ -134,19 +129,19 @@ public:
 	}
 
 
-	OpenCL(string Kernel_path, bool interop, int cl_device = 0, bool mute = true): failed(false)
+	OpenCL(std::string Kernel_path, bool interop, int cl_device = 0, bool mute = true): failed(false)
 	{
-		ifstream sin(Kernel_path);
+		std::ifstream sin(Kernel_path);
 
 		if (!sin.is_open())
 		{
 			ERROR_MSG("Error opening OpenCL kernel file");
 		}
 
-		Program::Sources sources;
-		string code((istreambuf_iterator<char>(sin)), istreambuf_iterator<char>());
+		cl::Program::Sources sources;
+		std::string code((std::istreambuf_iterator<char>(sin)), std::istreambuf_iterator<char>());
 
-		sources.push_back(make_pair(code.c_str(), code.length()));
+		sources.push_back(std::make_pair(code.c_str(), code.length()));
 
 		cl_int lError;
 		std::string lBuffer;
@@ -156,10 +151,10 @@ public:
 		//
 
 		// Get platforms.
-		vector<Platform> all_platforms;
-		vector<Device> all_devices;
+		std::vector<cl::Platform> all_platforms;
+		std::vector<cl::Device> all_devices;
 
-		Platform::get(&all_platforms);
+		cl::Platform::get(&all_platforms);
 
 		if (all_platforms.size() == 0)
 		{
@@ -179,12 +174,12 @@ public:
 
 		for (int i = 0; i < all_platforms.size(); i++)
 		{
-			Platform test_platform = all_platforms[i];
+			cl::Platform test_platform = all_platforms[i];
 			test_platform.getDevices(CL_DEVICE_TYPE_ALL, &all_devices);
 
 			if (!mute)
 			{
-				string device_nam = test_platform.getInfo<CL_PLATFORM_NAME>();
+				std::string device_nam = test_platform.getInfo<CL_PLATFORM_NAME>();
 				ERROR_MSG(("Platform: \n" + device_nam).c_str());
 			}
 
@@ -216,7 +211,7 @@ public:
 			// Look for the compatible context.
 			for (int j = 0; j < all_devices.size(); j++)
 			{
-				Device test_device = all_devices[j];
+				cl::Device test_device = all_devices[j];
 				cl_device_id aka = test_device();
 				if (interop)
 				{
@@ -225,7 +220,7 @@ public:
 					{
 						if (!mute)
 						{
-							string device_nam = test_device.getInfo<CL_DEVICE_NAME>();
+							std::string device_nam = test_device.getInfo<CL_DEVICE_NAME>();
 							ERROR_MSG(("We found a GLCL context! \n" + device_nam).c_str());
 						}
 
@@ -247,7 +242,7 @@ public:
 					{
 						if (!mute)
 						{
-							string device_nam = test_device.getInfo<CL_DEVICE_NAME>();
+							std::string device_nam = test_device.getInfo<CL_DEVICE_NAME>();
 							ERROR_MSG(("We found a CL context! \n" + device_nam).c_str());
 						}
 
@@ -286,18 +281,18 @@ public:
 
 		// Create a command queue.
 		default_program = cl::Program(default_context, sources);
-		vector<Device> dev;
+		std::vector<cl::Device> dev;
 		dev.push_back(default_device);
-		string OpenCLfolder = Path(Kernel_path);
+		std::string OpenCLfolder = Path(Kernel_path);
 		cl_int BUILD_ERR = default_program.build(dev, ("-I \""+OpenCLfolder+"\"").c_str());
 		if (BUILD_ERR != CL_SUCCESS)
 		{
 			//save error log to file
-			ofstream inter;
-			inter.open("errors.txt", ofstream::ate);
-			string error_msg(default_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(default_device));
+			std::ofstream inter;
+			inter.open("errors.txt", std::ofstream::ate);
+			std::string error_msg(default_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(default_device));
 			ERROR_MSG(("Error building kernel! " + getOpenCLError(BUILD_ERR) + "\n" + error_msg).c_str());
-			inter << "Building kernel errors: " << endl << error_msg << "\n";
+			inter << "Building kernel errors: " << std::endl << error_msg << "\n";
 			failed = true;
 		}
 		else if(!mute)
@@ -307,10 +302,10 @@ public:
 		device_name = default_device.getInfo<CL_DEVICE_NAME>();
 		group_size = default_device.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
 		device_extensions = default_device.getInfo<CL_DEVICE_EXTENSIONS>();
-		queue = CommandQueue(default_context, default_device);
+		queue = cl::CommandQueue(default_context, default_device);
 	}
 
-	string Path(const string& str)
+	std::string Path(const  std::string& str)
 	{
 		std::size_t found = str.find_last_of("/\\");
 		return str.substr(0, found);
