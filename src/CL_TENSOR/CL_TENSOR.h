@@ -29,6 +29,7 @@ bool AreTensorsEqual(cl_tensor x, cl_tensor y);
 bool AreTensorsCompatible(cl_tensor x, cl_tensor y);
 cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 
+int getrank(cl_tensor x);
 cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b);
 cl_tensor GetSumTensor(cl_tensor x);
 cl_tensor Repeat(cl_tensor x, int n); 
@@ -49,11 +50,19 @@ public:
 private:
 	std::unique_ptr<float> data;
 	cl_tensor param;
+}; 
+
+class Size
+{
+public:
+	Size(int a = 1, int b = 1, int c = 1, int d = 1);
+	cl_tensor param;
 };
 
 class TensorCL
 {
 public:
+	TensorCL(Size s, float fill = 0.f, bool rand = false);
 	TensorCL(int r, std::vector<int> s); 
 	TensorCL(int x, int y, int z = 1, int w = 1); 
 	TensorCL(cl_tensor p);
@@ -105,6 +114,8 @@ public:
 	TensorCL min(float y = 0.f);
 	TensorCL max(float y = 0.f);
 
+	TensorCL diag(float x = 1.f, float y = 0.f);
+
 	TensorCL _if (TensorCL & _true, TensorCL & _false);
 	TensorCL indicies(int dim);
 	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
@@ -147,6 +158,7 @@ template<typename T> T operator/(float x, T& Y);
 template<typename T> T operator>(float x, T& Y);
 template<typename T> T operator<(float x, T& Y);
 
+template<typename T> T diag(T& X, float x = 1.f, float y = 0.f);
 template<typename T> T random(T& X);
 template<typename T> T sin(T& X);
 template<typename T> T cos(T& X);
@@ -213,6 +225,12 @@ template<typename T>
 inline T operator<(float x, T& Y)
 {
 	return Y > x;
+}
+
+template<typename T>
+inline T diag(T & X, float x, float y)
+{
+	return X.diag(x,y);
 }
 
 template<typename T>

@@ -19,6 +19,11 @@ Tensor::Tensor()
 	tape_id = -1;
 }
 
+Tensor::Tensor(Size s, float fill, bool rand)
+{
+	init(TensorCL(s, fill, rand));
+}
+
 Tensor::Tensor(unsigned int x, unsigned int y, unsigned int z, unsigned int w)
 {
 	init(TensorCL(x, y, z, w));
@@ -61,6 +66,11 @@ void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 	PARENTS_TAPE[idt] = parents;
 	NUMBER_OF_COPIES[idt] = 1;
 	idt++;
+}
+
+Tensor Tensor::diag(float x, float y)
+{
+	return Tensor(VALUE_TAPE[this->tape_id].diag(x,y), std::pair<int, int>(this->tape_id, -1), NOT);
 }
 
 Tensor Tensor::random()
@@ -333,22 +343,66 @@ Tensor & Tensor::operator=(float a)
 
 Tensor Tensor::operator+(Tensor & X)
 {
-	return Tensor(VALUE_TAPE[this->tape_id] + VALUE_TAPE[X.tape_id], std::pair<int,int>(this->tape_id, X.tape_id), ADD_T);
+	if (X.ID() != -1 && ID() != -1)
+	{
+		return Tensor(VALUE_TAPE[this->tape_id] + VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), ADD_T);
+	}
+	else if (ID() == -1)
+	{
+		return X;
+	}
+	else
+	{
+		return *this;
+	}
 }
 
 Tensor Tensor::operator-(Tensor & X)
 {
-	return Tensor(VALUE_TAPE[this->tape_id] - VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), SUBS_T);
+	if (X.ID() != -1 && ID() != -1)
+	{
+		return Tensor(VALUE_TAPE[this->tape_id] - VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), SUBS_T);
+	}
+	else if (ID() == -1 && ID() != -1)
+	{
+		return X;
+	}
+	else
+	{
+		return *this;
+	}
 }
 
 Tensor Tensor::operator*(Tensor & X)
 {
-	return Tensor(VALUE_TAPE[this->tape_id] * VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), MUL_T);
+	if (X.ID() != -1 && ID() != -1)
+	{
+		return Tensor(VALUE_TAPE[this->tape_id] + VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), ADD_T);
+	}
+	else if (ID() == -1)
+	{
+		return X;
+	}
+	else
+	{
+		return *this;
+	}
 }
 
 Tensor Tensor::operator/(Tensor & X)
 {
-	return Tensor(VALUE_TAPE[this->tape_id] / VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), DIV_T);
+	if (X.ID() != -1 && ID() != -1)
+	{
+		return Tensor(VALUE_TAPE[this->tape_id] / VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), DIV_T);
+	}
+	else if (ID() == -1)
+	{
+		return X;
+	}
+	else
+	{
+		return *this;
+	}
 }
 
 Tensor Tensor::operator+(float x)
@@ -617,12 +671,10 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 	case Tensor::MIN_N:
 		num = FLOAT_TAPE[out_id];
 		AddDerivative(id_a, _if(Tensor(id_a) < num, Tensor(outgrad_id), 0.f));
-		AddDerivative(id_b, _if(Tensor(id_a) > num, Tensor(outgrad_id), 0.f));
 		break;
 	case Tensor::MAX_N:
 		num = FLOAT_TAPE[out_id];
 		AddDerivative(id_a, _if(Tensor(id_a) > num, Tensor(outgrad_id), 0.f));
-		AddDerivative(id_b, _if(Tensor(id_a) < num, Tensor(outgrad_id), 0.f));
 		break;
 	case Tensor::TRANSPOSE:
 		dim_a = TRANSPOSE_TAPE[out_id].first;
@@ -630,12 +682,21 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 		AddDerivative(id_a, transpose(Tensor(outgrad_id), dim_a, dim_b));
 		break;
 	case Tensor::DOT:
-		rnk = VALUE_TAPE[id_b].GetParam().rank - 2;
-		P1 = dot(Tensor(outgrad_id), transpose(Tensor(id_b)));
-		P2 = dot(transpose(Tensor(id_a)), Tensor(outgrad_id));
+		rnk = getrank(VALUE_TAPE[id_b].GetParam())- 2;
+		if (getrank(VALUE_TAPE[outgrad_id].GetParam()) == 1)
+		{
+			P1 = dot(transpose(Tensor(outgrad_id)), transpose(Tensor(id_b)));
+			P2 = dot(transpose(Tensor(id_a)), transpose(Tensor(outgrad_id)));
+		}
+		else
+		{
+			P1 = dot(Tensor(outgrad_id), transpose(Tensor(id_b)));
+			P2 = dot(transpose(Tensor(id_a)), Tensor(outgrad_id));
+		}
+		
 		for (int i = 0; i < rnk; i++) //sum over all redundant dimensions
 		{
-			P1 = sum(Tensor(P1, false));
+			P1 = sum(P1);
 		}
 		AddDerivative(id_a, P1);
 		AddDerivative(id_b, P2);
@@ -707,12 +768,19 @@ Gradient::~Gradient()
 
 void Gradient::AddDerivative(int pnode, Tensor gnode)
 {
-	if (dydx.count(pnode) != 0) //if a derivative already exists exists
+	if (pnode != -1)
 	{
-		dydx[pnode] = gnode+dydx[pnode];
+		if (dydx.count(pnode) != 0) //if a derivative already exists exists
+		{
+			dydx[pnode] = gnode + dydx[pnode];
+		}
+		else
+		{
+			dydx[pnode] = gnode;
+		}
 	}
 	else
 	{
-		dydx[pnode] = gnode;
+		int kek = sin(0.5f);
 	}
 }

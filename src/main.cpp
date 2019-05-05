@@ -1,6 +1,4 @@
-#include <SFML_plot.h>
-#include <Tensor.h>
-#include <Optimizer.h>
+#include <MD.h>
 
 using namespace std;
 
@@ -12,45 +10,35 @@ int main(int argc, char *argv[]) {
 	if (!cl.failed)
 	{
 		TensorUseOpenCL(&cl);
-		int N = 128;
-		Tensor A(N, N), C(N, N);
-
-		A = random(A);
-		C = indicies(C, 0) + 3*indicies(C, 1);
-		//PrintTensor(A);
-		Optimizer root(Optimizer::ADAM);
-		root.AddParameter(A);
-		root.AddParameter(C);
 		
-		SFMLP window(1600, 1100, 200, 6, 200 * 0.5 - 1, 0);
-		
-		window.AddEmptyLine(sf::Color::Red, "Tensor B");
-		window.AddEmptyLine(sf::Color::Blue, "TensorTapeSize");
+		//MD_CL ZnO(2, 8, 8);
+		//ZnO.LoadClusterFromFile("E:/0.xyz");
+		//ZnO.TrainNN(100, 1);
+		vector<Tensor> K;
+		K.push_back(Tensor(Size(2, 4), 1.f, true));
+		K.push_back(Tensor(Size(3, 2), 1.f, true));
 
-		int i = 0;
-		while (window.open)
+		Optimizer OPTIM(Optimizer::ADAM);
+		Tensor A(Size(4, 4, 2), 1.f), B(Size(3,4),1.f,true);
+		A = indicies(A, 0) + 4 * indicies(A, 1) + 10 * indicies(A, 2);
+		for (Tensor &W : K)
 		{
-			i++;
-			if (i < 10000)
-			{
-				Tensor B = dot(sin(A - C), cos(C + A)) ^ 2;
-				root.Optimization_Cost(B);
-				root.OptimizationIteration(1.f/(N*N));
-
-				Tensor COST = sum(sum(B));
-				window.AddPointToLine(0, i, COST()/(N * N));
-			}
-			window.AddPointToLine(1, i, TAPE_SIZE());
-			window.UpdateState();
+			OPTIM.AddParameter(W);
 		}
 
-		//PrintTensor(A);
-		//PrintTensor(C);
-		PrintTAPE(false);
+		for (int i = 0; i < 1000; i++)
+		{
+			Tensor COST = (dot(K[1], sum(tanh(dot(K[0], A)))) - B) ^ 2;
+			//PrintTAPE(true);
+			OPTIM.Optimization_Cost(COST);
+			OPTIM.OptimizationIteration(0.001);
+			cout << "COST:" << sum(sum(COST))() << endl;
+			for (Tensor &W : K)
+			{
+				PrintTensor(W);
+			}
+		}
 	}
-
-	PrintTAPE(false);
-	
 
 	system("pause");
 	

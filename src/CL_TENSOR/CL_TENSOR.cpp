@@ -6,7 +6,7 @@ CLFunction more_m, less_m;
 CLFunction more_n, less_n, if_cond;
 CLFunction idx, sinfun, cosfun, tanfun, tanhfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
 CLFunction expfun, logfun, transposefun, repeatfun;
-CLFunction sumfun, randfun;
+CLFunction sumfun, randfun, diagfun;
 
 TensorCL::TensorCL()
 {
@@ -31,11 +31,12 @@ TensorCL::~TensorCL()
 void TensorCL::init_data(float value)
 {
 	param.length = 1;
-	for (int i = 0; i < param.rank; i++)
+	for (int i = 0; i < MAX_DIM; i++)
 	{
 		param.length *= param.size[i];
 	}
 	cl_int status;
+	param.rank = getrank(param);
 	data = clCreateBuffer(CL->default_context(), CL_MEM_READ_WRITE, param.length * sizeof(float), 0, &status);
 
 	if (status != CL_SUCCESS)
@@ -48,6 +49,16 @@ void TensorCL::init_data(float value)
 		clEnqueueFillBuffer(CL->queue(), data, &value, sizeof(value), 0, param.length * sizeof(float), 0, 0, 0);
 	}
 	host_data = NULL;
+}
+
+TensorCL::TensorCL(Size s, float fill, bool rand)
+{
+	param = s.param;
+	init_data(fill);
+	if (rand)
+	{
+		*this = this->random()*fill;
+	}
 }
 
 TensorCL::TensorCL(int r, std::vector<int> s)
@@ -171,14 +182,14 @@ TensorCL::TensorCL(TensorCL &X, float fill)
 
 TensorCL TensorCL::operator+(TensorCL & X)
 {
-	if (AreTensorsEqual(param, X.param))
+	if (AreTensorsEqual(GetParam(), X.GetParam()))
 	{
-		TensorCL C(param); //create a temporary array
+		TensorCL C(GetParam()); //create a temporary array
 		add.SetRange(CL->group_size[0], 1, param.length, 1);
 		add.SetArg(0, C.data); //result
 		add.SetArg(1, data);
 		add.SetArg(2, X.data);
-		add.SetArg(3, param);
+		add.SetArg(3, GetParam());
 		add.SetArg(4, 1.f);
 		add.SetArg(5, 1.f);
 		add.RFlush();
@@ -195,7 +206,7 @@ TensorCL TensorCL::operator-(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		TensorCL C(param); //create a temporary array
+		TensorCL C(GetParam()); //create a temporary array
 		add.SetRange(CL->group_size[0], 1, param.length, 1);
 		add.SetArg(0, C.data); //result
 		add.SetArg(1, data);
@@ -218,7 +229,7 @@ TensorCL TensorCL::operator*(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		TensorCL C(param); //create a temporary array
+		TensorCL C(GetParam()); //create a temporary array
 		mul.SetRange(CL->group_size[0], 1, param.length, 1);
 		mul.SetArg(0, C.data); //result
 		mul.SetArg(1, data);
@@ -241,7 +252,7 @@ TensorCL TensorCL::operator/(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		TensorCL C(param); //create a temporary array
+		TensorCL C(GetParam()); //create a temporary array
 		mul.SetRange(CL->group_size[0], 1, param.length, 1);
 		mul.SetArg(0, C.data); //result
 		mul.SetArg(1, data);
@@ -264,7 +275,7 @@ TensorCL TensorCL::operator>(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		TensorCL C(param); //create a temporary array
+		TensorCL C(GetParam()); //create a temporary array
 		more_m.SetRange(CL->group_size[0], 1, param.length, 1);
 		more_m.SetArg(0, C.data); //result
 		more_m.SetArg(1, data);
@@ -284,7 +295,7 @@ TensorCL TensorCL::operator<(TensorCL & X)
 {
 	if (AreTensorsEqual(param, X.param))
 	{
-		TensorCL C(param); //create a temporary array
+		TensorCL C(GetParam()); //create a temporary array
 		less_m.SetRange(CL->group_size[0], 1, param.length, 1);
 		less_m.SetArg(0, C.data); //result
 		less_m.SetArg(1, data);
@@ -327,7 +338,7 @@ TensorCL TensorCL::operator/(float x)
 
 TensorCL TensorCL::operator>(float x)
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	more_n.SetRange(CL->group_size[0], 1, param.length, 1);
 	more_n.SetArg(0, C.data); //result
 	more_n.SetArg(1, data);
@@ -339,7 +350,7 @@ TensorCL TensorCL::operator>(float x)
 
 TensorCL TensorCL::operator<(float x)
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	less_n.SetRange(CL->group_size[0], 1, param.length, 1);
 	less_n.SetArg(0, C.data); //result
 	less_n.SetArg(1, data);
@@ -352,7 +363,7 @@ TensorCL TensorCL::operator<(float x)
 
 TensorCL TensorCL::random()
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	randfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	randfun.SetArg(0, C.data); //result
 	randfun.SetArg(1, param);
@@ -363,7 +374,7 @@ TensorCL TensorCL::random()
 
 TensorCL TensorCL::sin()
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	sinfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	sinfun.SetArg(0, C.data); //result
 	sinfun.SetArg(1, data);
@@ -374,7 +385,7 @@ TensorCL TensorCL::sin()
 
 TensorCL TensorCL::cos()
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	cosfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	cosfun.SetArg(0, C.data); //result
 	cosfun.SetArg(1, data);
@@ -385,7 +396,7 @@ TensorCL TensorCL::cos()
 
 TensorCL TensorCL::tan()
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	tanfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	tanfun.SetArg(0, C.data); //result
 	tanfun.SetArg(1, data);
@@ -396,7 +407,7 @@ TensorCL TensorCL::tan()
 
 TensorCL TensorCL::exp()
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	expfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	expfun.SetArg(0, C.data); //result
 	expfun.SetArg(1, data);
@@ -407,7 +418,7 @@ TensorCL TensorCL::exp()
 
 TensorCL TensorCL::log()
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	logfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	logfun.SetArg(0, C.data); //result
 	logfun.SetArg(1, data);
@@ -418,7 +429,7 @@ TensorCL TensorCL::log()
 
 TensorCL TensorCL::tanh()
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	tanhfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	tanhfun.SetArg(0, C.data); //result
 	tanhfun.SetArg(1, data);
@@ -429,7 +440,7 @@ TensorCL TensorCL::tanh()
 
 TensorCL TensorCL::operator^(float y)
 {
-	TensorCL C(param); //create a temporary array
+	TensorCL C(GetParam()); //create a temporary array
 	powfun.SetRange(CL->group_size[0], 1, param.length, 1);
 	powfun.SetArg(0, C.data); //result
 	powfun.SetArg(1, data);
@@ -441,21 +452,21 @@ TensorCL TensorCL::operator^(float y)
 
 TensorCL TensorCL::dot(TensorCL & X)
 {
-	if (AreTensorsCompatible(param, X.param))
+	if (AreTensorsCompatible(GetParam(), X.GetParam()))
 	{
-		TensorCL C(TensorDotResult(param, X.param)); //create a temporary array
+		TensorCL C(TensorDotResult(GetParam(), X.GetParam())); //create a temporary array
 
 		m_dot.SetRange(TS, TS, C.param.size[0], C.param.size[1]);
 		m_dot.SetArg(0, C.data); //result
 		m_dot.SetArg(1, data);
 		m_dot.SetArg(2, X.data);
-		m_dot.SetArg(3, C.param);
-		m_dot.SetArg(4, param);
-		m_dot.SetArg(5, X.param);
+		m_dot.SetArg(3, C.GetParam());
+		m_dot.SetArg(4, GetParam());
+		m_dot.SetArg(5, X.GetParam());
 
 		int shiftA = 0;
 		int shiftB = 0;
-		for (int shiftC = 0; shiftC < C.param.length; shiftC += C.param.size[0] * C.param.size[1])
+		for (int shiftC = 0; shiftC < C.GetLength(); shiftC += C.param.size[0] * C.param.size[1])
 		{
 			m_dot.SetArg(6, shiftA);
 			m_dot.SetArg(7, shiftB);
@@ -519,11 +530,26 @@ int TensorCL::GetLength()
 
 cl_tensor TensorCL::GetParam()
 {
+	param.rank = getrank(param);
 	return param;
+}
+
+int getrank(cl_tensor x)
+{
+	int rank = 0;
+	for (int i = 0; i < MAX_DIM; i++)
+	{
+		if (x.size[i] > 1)
+		{
+			rank = i + 1;
+		}
+	}
+	return rank;
 }
 
 cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b)
 {
+	x.rank = getrank(x);
 	int buf = x.size[dim_a];
 	x.size[dim_a] = x.size[dim_b];
 	x.size[dim_b] = buf;
@@ -536,6 +562,7 @@ cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b)
 
 cl_tensor GetSumTensor(cl_tensor x)
 {
+	x.rank = getrank(x);
 	x.length = x.length / x.size[x.rank - 1];
 	x.size[x.rank-1] = 1;
 	x.rank -= 1;
@@ -544,6 +571,7 @@ cl_tensor GetSumTensor(cl_tensor x)
 
 cl_tensor Repeat(cl_tensor x, int n)
 {
+	x.rank = getrank(x);
 	x.length = x.length * n;
 	x.size[x.rank] = n;
 	x.rank += 1;
@@ -578,6 +606,7 @@ void TensorUseOpenCL(OpenCL *cl)
 	if_cond.Initialize("tensor_if", CL);
 	powfun.Initialize("tensor_pow", CL); 
 	randfun.Initialize("tensor_random", CL);
+	diagfun.Initialize("tensor_diag", CL);
 }
 
 void PrintTensor(TensorCL & a)
@@ -612,7 +641,7 @@ void PrintTensor(TensorCL & a)
 TensorCL TensorCL::sum()
 {
 	TensorCL C(GetSumTensor(GetParam())); //create a temporary array
-	sumfun.SetRange(CL->group_size[0], 1, C.GetParam().length, 1);
+	sumfun.SetRange(CL->group_size[0], 1, C.GetLength(), 1);
 	sumfun.SetArg(0, C.data); //result
 	sumfun.SetArg(1, data);
 	sumfun.SetArg(2, C.GetParam());
@@ -669,17 +698,29 @@ TensorCL TensorCL::max(float y)
 	return C;
 }
 
+TensorCL TensorCL::diag(float x, float y)
+{
+	TensorCL C(GetParam()); //create a temporary array
+	diagfun.SetRange(CL->group_size[0], 1, param.length, 1);
+	diagfun.SetArg(0, C.data); //result
+	diagfun.SetArg(1, GetParam());
+	diagfun.SetArg(2, x);
+	diagfun.SetArg(3, y);
+	diagfun.RFlush();
+	return C;
+}
+
 TensorCL TensorCL::_if(TensorCL & _true, TensorCL & _false)
 {
-	if (AreTensorsEqual(param, _true.param) && AreTensorsEqual(param, _false.param))
+	if (AreTensorsEqual(GetParam(), _true.GetParam()) && AreTensorsEqual(GetParam(), _false.GetParam()))
 	{
-		TensorCL C(param); //create a temporary array
+		TensorCL C(GetParam()); //create a temporary array
 		if_cond.SetRange(CL->group_size[0], 1, param.length, 1);
 		if_cond.SetArg(0, C.data); //result
 		if_cond.SetArg(1, data);
 		if_cond.SetArg(2, _true.data);
 		if_cond.SetArg(3, _false.data);
-		if_cond.SetArg(4, param);
+		if_cond.SetArg(4, GetParam());
 		if_cond.RFlush();
 		return C;
 	}
@@ -723,7 +764,7 @@ TensorCL TensorCL::transpose(int dim_a, int dim_b)
 TensorCL TensorCL::repeat(int n)
 {
 	TensorCL C(Repeat(GetParam(), n));
-	repeatfun.SetRange(CL->group_size[0], 1, param.length, 1);
+	repeatfun.SetRange(CL->group_size[0], 1, C.GetLength(), 1);
 	repeatfun.SetArg(0, C.data); //result
 	repeatfun.SetArg(1, data);
 	repeatfun.SetArg(2, C.GetParam());
@@ -760,9 +801,9 @@ bool AreTensorsEqual(cl_tensor x, cl_tensor y)
 bool AreTensorsCompatible(cl_tensor x, cl_tensor y)
 {
 	bool comp = true;
-	comp = comp && (x.rank <= y.rank);
+	comp = comp && (getrank(x) <= getrank(y));
 
-	for (int i = 2; i < x.rank; i++)
+	for (int i = 2; i < getrank(x); i++)
 	{
 		comp = comp && (x.size[i] == y.size[i] || x.size[i] == 0 || x.size[i] == 1);
 	}
@@ -773,9 +814,11 @@ bool AreTensorsCompatible(cl_tensor x, cl_tensor y)
 
 cl_tensor TensorDotResult(cl_tensor x, cl_tensor y)
 {
+	x.rank = getrank(x);
+	y.rank = getrank(y);
+
 	cl_tensor res = y;
 	res.size[0] = x.size[0];
-
 	res.length = 1;
 	for (int i = 0; i < res.rank; i++)
 	{
@@ -858,10 +901,27 @@ void TensorData::LoadData(std::vector<float> A)
 
 cl_tensor TensorData::GetParam()
 {
+	param.rank = getrank(param);
 	return param;
 }
 
 float * TensorData::GetData()
 {
 	return data.get();
+}
+
+Size::Size(int x, int y, int z, int w)
+{
+	param.size[0] = x;
+	param.size[1] = y;
+	param.size[2] = z;
+	param.size[3] = w;
+
+	param.length = 1;
+	for (int i = 0; i < param.rank; i++)
+	{
+		param.length *= param.size[i];
+	}
+
+	param.rank = getrank(param);
 }

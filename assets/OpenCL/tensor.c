@@ -30,6 +30,16 @@ int ID(cl_index indx, cl_tensor info)
 	return id;
 }
 
+bool is_diag(cl_index indx, cl_tensor info)
+{
+	bool diag = true;
+	for (int i = 0; i < info.rank-1; i++)
+	{
+		diag = diag && (indx.index[i] == indx.index[i+1]);
+	}
+	return diag;
+}
+
 cl_index get_index(int id, cl_tensor info)
 {
 	cl_index idx;
@@ -269,6 +279,16 @@ __kernel void tensor_transpose(__global float* C,
 	const int i = get_global_id(0);
 	if (i < Cdata.length)
 		C[i] = A[ID(transpose(get_index(i, Cdata), dim_a, dim_b), Adata)];
+}
+
+__kernel void tensor_diag(__global float* C,
+	const cl_tensor Cdata,
+	const float x,
+	const float y )
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+		C[i] = is_diag(get_index(i, Cdata), Cdata)?x:y;
 }
 
 __kernel void tensor_repeat(__global float* C,

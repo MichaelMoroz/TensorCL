@@ -3,5 +3,6 @@ add_library(MD
   MD.cpp
 
   AtomFileLoad.h
+  AtomFileLoad.cpp
 )
 

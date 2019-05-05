@@ -19,6 +19,7 @@ public:
 	};
 
 	Tensor();
+	Tensor(Size s, float fill = 0.f, bool rand = false);
 	Tensor(unsigned int x, unsigned int y, unsigned int z = 1, unsigned int w = 1);
 	Tensor(cl_tensor param);
 	Tensor(TensorCL& input, std::pair<int, int> parents = std::pair<int, int>(-1, -1), OPERATION op = NONE);
@@ -53,6 +54,7 @@ public:
 
 	float operator()(int i = 1, int j = 1, int k = 1, int m = 1);
 
+	Tensor diag(float x = 1.f, float y = 0.f);
 	Tensor random();
 	Tensor sin();
 	Tensor cos();
