@@ -320,9 +320,11 @@ __kernel void tensor_sum(__global float* C,
 		C[i] = sum;
 }
 
+#define NAIVE_DOT false
+
 __kernel void tensor_dot_product( __global float* C,
-							const __global float* A,
-							const __global float* B,
+							__global float* A,
+							__global float* B,
 							const cl_tensor Cdata,
 							const cl_tensor Adata,
 							const cl_tensor Bdata,
@@ -341,36 +343,44 @@ __kernel void tensor_dot_product( __global float* C,
 	const int globalRow = get_global_id(0); // Row ID of C (0..M)
 	const int globalCol = get_global_id(1); // Col ID of C (0..N)
 
-	__local float Asub[TS][TS];
-	__local float Bsub[TS][TS];
-
 	// Compute a single element (loop over K)
 	float acc = 0.0f;
-
-	// Loop over all tiles
-	const int numTiles = floor((float)K / (float)TS) + 1;
-
-	for (int t = 0; t < numTiles; t++) {
-
-		// Load one tile of A and B into local memory
-		const int tiledRow = TS * t + row;
-		const int tiledCol = TS * t + col;
-
-		Asub[col][row] = (tiledCol < K) ? (A[tiledCol*M + globalRow + shiftA]) : (0);
-		Bsub[col][row] = (tiledRow < K) ? (B[globalCol*K + tiledRow + shiftB]) : (0);
-
-		// Synchronise to make sure the tile is loaded
-		barrier(CLK_LOCAL_MEM_FENCE);
-
-		// Perform the computation for a single tile
-		for (int k = 0; k < TS; k++) {
-			acc += Asub[k][row] * Bsub[col][k];
+	
+	#if NAIVE_DOT
+		for (int k=0; k<K; k++) 
+		{
+			acc += A[k*M + globalRow + shiftA] * B[globalCol*K + k + shiftB];
 		}
+	#else
+	    __local float Asub[TS][TS];
+		__local float Bsub[TS][TS];
+		
+		// Loop over all tiles
+		const int numTiles = K/TS + 1;
 
-		// Synchronise before loading the next tile
-		barrier(CLK_LOCAL_MEM_FENCE);
-	}
+		for (int t = 0; t < numTiles; t++) {
 
+			// Load one tile of A and B into local memory
+			const int tiledRow = TS * t + row;
+			const int tiledCol = TS * t + col;
+			
+			Asub[col][row] = (tiledCol < K) ? (A[tiledCol*M + globalRow + shiftA]) : (0.f);
+			Bsub[col][row] = (tiledRow < K) ? (B[globalCol*K + tiledRow + shiftB]) : (0.f);
+
+			// Synchronise to make sure the tile is loaded
+			barrier(CLK_LOCAL_MEM_FENCE);
+
+			// Perform the computation for a single tile
+			for (int k = 0; k < TS; k++) {
+				acc += Asub[k][row] * Bsub[col][k];
+			}
+
+			// Synchronise before loading the next tile
+			barrier(CLK_LOCAL_MEM_FENCE);
+		}
+		
+	#endif
+		
 	// Store the result
 	if (globalRow < M && globalCol < N)
 		C[globalCol*M + globalRow + shiftC] = acc;

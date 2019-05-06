@@ -456,7 +456,7 @@ TensorCL TensorCL::dot(TensorCL & X)
 	{
 		TensorCL C(TensorDotResult(GetParam(), X.GetParam())); //create a temporary array
 
-		m_dot.SetRange(TS, TS, C.param.size[0], C.param.size[1]);
+		m_dot.SetRangeExactly(TS, TS, C.param.size[0], C.param.size[1]);
 		m_dot.SetArg(0, C.data); //result
 		m_dot.SetArg(1, data);
 		m_dot.SetArg(2, X.data);

@@ -19,25 +19,26 @@ int main(int argc, char *argv[]) {
 		K.push_back(Tensor(Size(3, 2), 1.f, true));
 
 		Optimizer OPTIM(Optimizer::ADAM);
-		Tensor A(Size(4, 4, 2), 1.f), B(Size(3,4),1.f,true);
-		A = indicies(A, 0) + 4 * indicies(A, 1) + 10 * indicies(A, 2);
+		Tensor A(Size(4, 4, 2), 0.2f, true), B(Size(3,4),0.2f,true);
 		for (Tensor &W : K)
 		{
 			OPTIM.AddParameter(W);
+			//PrintTensor(W);
 		}
 
-		for (int i = 0; i < 1000; i++)
+		for (int i = 0; i < 100; i++)
 		{
-			Tensor COST = (dot(K[1], sum(tanh(dot(K[0], A)))) - B) ^ 2;
-			//PrintTAPE(true);
+			Tensor COST = (dot(K[1], sum(max(dot(K[0], A)))) - B) ^ 2;
 			OPTIM.Optimization_Cost(COST);
-			OPTIM.OptimizationIteration(0.001);
-			cout << "COST:" << sum(sum(COST))() << endl;
+			OPTIM.OptimizationIteration(0.3, false);
+			cout << "COST:" << sum(sum(COST))() << ", Tape size: "<< TAPE_SIZE() << endl;
 			for (Tensor &W : K)
 			{
-				PrintTensor(W);
+				//PrintTensor(W);
 			}
 		}
+
+		PrintTAPE(false);
 	}
 
 	system("pause");

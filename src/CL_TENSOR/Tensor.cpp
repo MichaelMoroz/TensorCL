@@ -4,11 +4,75 @@
 #include <stack>
 
 int idt = 0;
+
+#define DEBUG false;
+#define DEBUG_PRINT_ARGS true;
+
+std::string getOperationName(Tensor::OPERATION op)
+{
+	switch (op)
+	{
+	case Tensor::NONE:
+		return "NONE";
+	case Tensor::ADD_T:
+		return "ADD_TENSORS";
+	case Tensor::SUBS_T:
+		return "SUBSTRACT_TENSORS";
+	case Tensor::MUL_T:
+		return "MULTIPLY_TENSORS";
+	case Tensor::DIV_T:
+		return "DIVIDE_TENSORS";
+	case Tensor::NEG:
+		return "NEGATE";
+	case Tensor::ADD_N:
+		return "ADD_NUMBER";
+	case Tensor::SUBS_N:
+		return "SUBSTRACT_NUMBER";
+	case Tensor::MUL_N:
+		return "MULTIPLY_NUMBER";
+	case Tensor::DIV_N:
+		return "DIVIDE_NUMBER";
+	case Tensor::SIN:
+		return "SIN";
+	case Tensor::COS:
+		return "COS";
+	case Tensor::TAN:
+		return "EXP";
+	case Tensor::LOG:
+		return "LOG";
+	case Tensor::TANH:
+		return "TANH";
+	case Tensor::POW:
+		return "POW";
+	case Tensor::SUM:
+		return "SUM";
+	case Tensor::MIN_M:
+		return "MIN_M";
+	case Tensor::MAX_M:
+		return "MAX_M";
+	case Tensor::MIN_N:
+		return "MIN_N";
+	case Tensor::MAX_N:
+		return "MAX_N";
+	case Tensor::TRANSPOSE:
+		return "TRANSPOSE";
+	case Tensor::IF_COND:
+		return "IF_COND";
+	case Tensor::DOT:
+		return "DOT";
+	case Tensor::REPEAT:
+		return "REPEAT";
+	default:
+		return "UNKNOWN";
+	}
+}
+
 // operation trees/recording tape
-// only one instance exists
+// only one instance for the entire program exists
 std::map<int, TensorCL> VALUE_TAPE;
 std::map<int, Tensor::OPERATION> OPERATION_TAPE;
 std::map<int, std::pair<int, int> > PARENTS_TAPE;
+std::map<int, std::vector<int> > CHILDS_TAPE;
 std::map<int, float> FLOAT_TAPE;
 std::map<int, std::pair<int, int> > TRANSPOSE_TAPE;
 std::map<int, int> REPEAT_TAPE;
@@ -60,11 +124,34 @@ Tensor::Tensor(TensorData & A)
 
 void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 {
+	//Add this operation and its value to the tape
 	tape_id = idt;
 	VALUE_TAPE[idt] = X;
 	OPERATION_TAPE[idt] = op;
 	PARENTS_TAPE[idt] = parents;
+	if (parents.first != -1) CHILDS_TAPE[parents.first].push_back(idt);
+	if (parents.second != -1) CHILDS_TAPE[parents.second].push_back(idt);
 	NUMBER_OF_COPIES[idt] = 1;
+
+	#if DEBUG
+		std::cout << "TapeID_" << idt << " :: " << getOperationName(op) << "(arg1_id = " << parents.first << ", arg2_id = " << parents.second << ") " << std::endl;
+		
+		#if DEBUG_PRINT_ARGS
+		if (parents.first != -1)
+		{
+			std::cout << "arg1_id = " << parents.first << std::endl;
+			PrintTensor(VALUE_TAPE[parents.first]);
+		}
+		if (parents.second != -1)
+		{
+			std::cout << "arg1_id = " << parents.second << std::endl;
+			PrintTensor(VALUE_TAPE[parents.second]);
+		}
+		#endif
+		
+		PrintTensor(VALUE_TAPE[idt]);
+	#endif
+
 	idt++;
 }
 
@@ -110,17 +197,18 @@ Tensor Tensor::tanh()
 
 Tensor Tensor::operator^(float y)
 {
-	FLOAT_TAPE[idt] = y;
 	if (y == 1) //dont use pow if power is = 1
 	{
 		return *this;
 	}
 	else if (y == 0) // when pow = 0 then tensor = 1
 	{
-		return Tensor(Tensor(tape_id),1.f);
+		FLOAT_TAPE[idt] = y;
+		return Tensor(TensorCL(VALUE_TAPE[this->tape_id],1.f), std::pair<int, int>(this->tape_id, -1), POW);
 	}
 	else
 	{
+		FLOAT_TAPE[idt] = y;
 		return Tensor(VALUE_TAPE[this->tape_id] ^ y, std::pair<int, int>(this->tape_id, -1), POW);
 	}
 }
@@ -201,10 +289,10 @@ int Tensor::ID()
 	return tape_id;
 }
 
-//it's slow, but whatever
 std::vector<int> Tensor::FindChilds(int id)
 {
-	std::vector<int> childs;
+	//the slow way, do not use!
+	/*std::vector<int> childs;
 	auto it = PARENTS_TAPE.begin();
 	// Iterate through the map
 	while (it != PARENTS_TAPE.end())
@@ -216,30 +304,35 @@ std::vector<int> Tensor::FindChilds(int id)
 		}
 		// Go to next entry in map
 		it++;
-	}
-	return childs;
+	}*/
+	return CHILDS_TAPE[id];
+}
+
+
+void RemoveFromTape(int id)
+{
+	VALUE_TAPE.erase(id);
+	OPERATION_TAPE.erase(id);
+	PARENTS_TAPE.erase(id);
+	NUMBER_OF_COPIES.erase(id);
+	CHILDS_TAPE.erase(id);
+	FLOAT_TAPE.erase(id);
+	TRANSPOSE_TAPE.erase(id);
+	REPEAT_TAPE.erase(id);
 }
 
 void Tensor::RecursiveDestructionChilds(int id)
 {
 	if (VALUE_TAPE.count(id) != 0) //if not yet deleted
 	{
-		std::vector<int> childs = FindChilds(id);
-
-		for (int i = 0; i < childs.size(); i++)
+		for (auto &child_id: FindChilds(id))
 		{
-			RecursiveDestructionChilds(childs[i]);
+			RecursiveDestructionChilds(child_id);
 		}
 
 		if (NUMBER_OF_COPIES[id] == 0)
 		{
-			VALUE_TAPE.erase(id);
-			OPERATION_TAPE.erase(id);
-			PARENTS_TAPE.erase(id);
-			NUMBER_OF_COPIES.erase(id);
-			FLOAT_TAPE.erase(id);
-			TRANSPOSE_TAPE.erase(id);
-			REPEAT_TAPE.erase(id);
+			RemoveFromTape(id);
 		}
 	}
 }
@@ -253,26 +346,18 @@ void Tensor::RecursiveDestructionParents(int id)
 			RecursiveDestructionParents(PARENTS_TAPE[id].first);
 			RecursiveDestructionParents(PARENTS_TAPE[id].second);
 			
-			VALUE_TAPE.erase(id);
-			OPERATION_TAPE.erase(id);
-			PARENTS_TAPE.erase(id);
-			NUMBER_OF_COPIES.erase(id);
-			FLOAT_TAPE.erase(id);
-			TRANSPOSE_TAPE.erase(id);
-			REPEAT_TAPE.erase(id);
+			RemoveFromTape(id);
 		}
 	}
 }
 
 bool Tensor::AreAllChildsDestroyed(int id)
 {
-	std::vector<int> childs = FindChilds(id);
-
 	bool tree_destroyed = NUMBER_OF_COPIES[id] == 0;
 
-	for (int i = 0; i < childs.size(); i++)
+	for (auto &child_id : FindChilds(id))
 	{
-		tree_destroyed = tree_destroyed && AreAllChildsDestroyed(childs[i]);
+		tree_destroyed = tree_destroyed && AreAllChildsDestroyed(child_id);
 	}
 
 	return tree_destroyed;
@@ -377,7 +462,7 @@ Tensor Tensor::operator*(Tensor & X)
 {
 	if (X.ID() != -1 && ID() != -1)
 	{
-		return Tensor(VALUE_TAPE[this->tape_id] + VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), ADD_T);
+		return Tensor(VALUE_TAPE[this->tape_id] * VALUE_TAPE[X.tape_id], std::pair<int, int>(this->tape_id, X.tape_id), MUL_T);
 	}
 	else if (ID() == -1)
 	{
@@ -459,63 +544,6 @@ Tensor Tensor::operator<(float x)
 float Tensor::operator()(int i, int j, int k, int m)
 {
 	return GetTensor()(i, j, k, m);
-}
-
-std::string getOperationName(Tensor::OPERATION op)
-{
-	switch (op)
-	{
-	case Tensor::NONE:
-		return "NONE";
-	case Tensor::ADD_T:
-		return "ADD_TENSORS";
-	case Tensor::SUBS_T:
-		return "SUBSTRACT_TENSORS";
-	case Tensor::MUL_T:
-		return "MULTIPLY_TENSORS";
-	case Tensor::DIV_T:
-		return "DIVIDE_TENSORS";
-	case Tensor::NEG:
-		return "NEGATE";
-	case Tensor::ADD_N:
-		return "ADD_NUMBER";
-	case Tensor::SUBS_N:
-		return "SUBSTRACT_NUMBER";
-	case Tensor::MUL_N:
-		return "MULTIPLY_NUMBER";
-	case Tensor::DIV_N:
-		return "DIVIDE_NUMBER";
-	case Tensor::SIN:
-		return "SIN";
-	case Tensor::COS:
-		return "COS";
-	case Tensor::TAN:
-		return "EXP";
-	case Tensor::LOG:
-		return "LOG";
-	case Tensor::TANH:
-		return "TANH";
-	case Tensor::POW:
-		return "POW";
-	case Tensor::SUM:
-		return "SUM";
-	case Tensor::MIN_M:
-		return "MIN_M";
-	case Tensor::MAX_M:
-		return "MAX_M";
-	case Tensor::MIN_N:
-		return "MIN_N";
-	case Tensor::MAX_N:
-		return "MAX_N";
-	case Tensor::TRANSPOSE:
-		return "TRANSPOSE";
-	case Tensor::DOT:
-		return "DOT";
-	case Tensor::REPEAT:
-		return "REPEAT";
-	default:
-		return "UNKNOWN";
-	}
 }
 
 int TAPE_SIZE()

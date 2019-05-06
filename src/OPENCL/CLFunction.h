@@ -45,6 +45,12 @@ public:
 		local = cl::NDRange(local_x, local_y);
 	}
 
+	void SetRangeExactly(int local_x, int local_y, int global_x, int global_y)
+	{
+		global = cl::NDRange(ceil((float)global_x / (float)local_x)*local_x, ceil((float)global_y / (float)local_y)*local_y);
+		local = cl::NDRange(local_x, local_y);
+	}
+
 	void SetArg(int i, float A)
 	{
 		cl_int arg_error = kernel.setArg(i, A);

@@ -22,7 +22,7 @@ void Optimizer::AddParameter(Tensor & X)
 {
 	if (method_used != NONE)
 	{
-		OPTIM_TENSORS.push_back(X.ID());
+		OPTIM_TENSORS.push_back(X);
 
 		switch (method_used)
 		{
@@ -41,7 +41,7 @@ void Optimizer::Optimization_Cost(Tensor & COST)
 	cost_id = COST.ID();
 }
 
-void Optimizer::OptimizationIteration(float dt)
+void Optimizer::OptimizationIteration(float dt, bool print_grad)
 {
 	if (method_used != NONE)
 	{
@@ -52,27 +52,36 @@ void Optimizer::OptimizationIteration(float dt)
 		{
 		case GRAD_DESC:
 			grad.reset(new Gradient(cost_id));
-			for (auto &tensor : OPTIM_TENSORS)
+			for (Tensor &tensor : OPTIM_TENSORS)
 			{
 				//operate only on base tensors, we wont need to find the gradient of gradient descent anyway =)
-				Tensor(tensor).GetTensor() -= grad->wrt(tensor).GetTensor()*dt;
+				tensor.GetTensor() -= grad->wrt(tensor).GetTensor()*dt;
+				if (print_grad)
+				{
+					PrintTensor(grad->wrt(tensor));
+				}
 			}
 			break;
 		case ADAM:
 			grad.reset(new Gradient(cost_id));
-			for (auto &tensor : OPTIM_TENSORS)
+			for (Tensor &tensor : OPTIM_TENSORS)
 			{
-				moment[tensor] = moment[tensor] * beta_1 + grad->wrt(tensor).GetTensor() * (1 - beta_1);
-				second_moment[tensor] = second_moment[tensor] * beta_2 + (grad->wrt(tensor).GetTensor() ^ 2)*(1 - beta_2);
-				TensorCL mhat = moment[tensor] / (1 - pow(beta_1, iterations));
-				TensorCL vhat = second_moment[tensor] / (1 - pow(beta_2, iterations));
-				Tensor(tensor).GetTensor() -= mhat * ((vhat + epsilon) ^ 0.5f)*dt;
+				moment[tensor.ID()] = moment[tensor.ID()] * beta_1 + grad->wrt(tensor).GetTensor() * (1 - beta_1);
+				second_moment[tensor.ID()] = second_moment[tensor.ID()] * beta_2 + (grad->wrt(tensor).GetTensor() ^ 2)*(1 - beta_2);
+				TensorCL mhat = moment[tensor.ID()] / (1 - pow(beta_1, iterations));
+				TensorCL vhat = second_moment[tensor.ID()] / (1 - pow(beta_2, iterations));
+				tensor.GetTensor() -= mhat * ((vhat + epsilon) ^ 0.5f)*dt;
+				if (print_grad)
+				{
+					PrintTensor(grad->wrt(tensor));
+				}
 			}
 			break;
 		default:
 			break;
 		}
 	}
+	
 }
 
 Optimizer::~Optimizer()
