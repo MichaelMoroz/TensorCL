@@ -1,15 +1,27 @@
 #include "Optimizer.h"
+#include "Optimizer.h"
+#include "Optimizer.h"
 
 Optimizer::Optimizer()
 {
 	method_used = NONE;
 	iterations = 0;
+	epsilon = 1e-4f;
 }
 
 Optimizer::Optimizer(OPTIMIZATION_METHOD method)
 {
 	method_used = method;
 	iterations = 0;
+	beta_1 = 0.9f;
+	beta_2 = 0.999f;
+	epsilon = 1e-4f;
+	dt = 0.001;
+}
+
+void Optimizer::setSpeed(float speed)
+{
+	dt = speed;
 }
 
 void Optimizer::setMethod(OPTIMIZATION_METHOD method)
@@ -36,18 +48,14 @@ void Optimizer::AddParameter(Tensor & X)
 	}
 }
 
-void Optimizer::Optimization_Cost(Tensor & COST)
-{
-	cost_id = COST.ID();
-}
-
-void Optimizer::OptimizationIteration(float dt, bool print_grad)
+void Optimizer::Optimize_Cost(Tensor & COST, bool print_grad)
 {
 	if (method_used != NONE)
 	{
+		cost_id = COST.ID();
 		iterations++;
 		std::unique_ptr<Gradient> grad;
-		float beta_1 = 0.9f, beta_2 = 0.999f, epsilon = 1e-4f;
+		
 		switch (method_used)
 		{
 		case GRAD_DESC:
@@ -81,7 +89,6 @@ void Optimizer::OptimizationIteration(float dt, bool print_grad)
 			break;
 		}
 	}
-	
 }
 
 Optimizer::~Optimizer()

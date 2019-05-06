@@ -19,6 +19,8 @@ int main(int argc, char *argv[]) {
 		K.push_back(Tensor(Size(3, 2), 1.f, true));
 
 		Optimizer OPTIM(Optimizer::ADAM);
+		OPTIM.setSpeed(0.5);
+
 		Tensor A(Size(4, 4, 2), 0.2f, true), B(Size(3,4),0.2f,true);
 		for (Tensor &W : K)
 		{
@@ -26,11 +28,10 @@ int main(int argc, char *argv[]) {
 			//PrintTensor(W);
 		}
 
-		for (int i = 0; i < 100; i++)
+		for (int i = 0; i < 10000; i++)
 		{
 			Tensor COST = (dot(K[1], sum(max(dot(K[0], A)))) - B) ^ 2;
-			OPTIM.Optimization_Cost(COST);
-			OPTIM.OptimizationIteration(0.3, false);
+			OPTIM.Optimize_Cost(COST);
 			cout << "COST:" << sum(sum(COST))() << ", Tape size: "<< TAPE_SIZE() << endl;
 			for (Tensor &W : K)
 			{

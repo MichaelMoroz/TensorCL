@@ -89,8 +89,7 @@ void MD_CL::TrainNN(int Iterations, int BatchSize)
 		{
 				COST = COST + (GetEnergy(i) - Energies[i]) ^ 2;
 		}
-		OPTIM.Optimization_Cost(COST);
-		OPTIM.OptimizationIteration(0.05);
+		OPTIM.Optimize_Cost(COST);
 	//	PrintTAPE(true);
 		std::cout << "Current cost: " << COST() << std::endl;
 	}
@@ -129,4 +128,6 @@ void MD_CL::InitOptimizer()
 	OPTIM.setMethod(Optimizer::GRAD_DESC);
 	for (auto &k : Weights)
 		OPTIM.AddParameter(k);
+
+	OPTIM.setSpeed(0.05);
 }

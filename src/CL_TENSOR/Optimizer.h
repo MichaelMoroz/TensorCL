@@ -17,10 +17,10 @@ public:
 	Optimizer();
 	Optimizer(OPTIMIZATION_METHOD method);
 
+	void setSpeed(float speed);
 	void setMethod(OPTIMIZATION_METHOD method);
 	void AddParameter(Tensor &X);
-	void Optimization_Cost(Tensor &COST);
-	void OptimizationIteration(float dt, bool print_grad = false);
+	void Optimize_Cost(Tensor & COST, bool print_grad = false);
 
 	~Optimizer();
 
@@ -28,6 +28,7 @@ protected:
 	OPTIMIZATION_METHOD method_used;
 	int cost_id;
 	int iterations;
+	float beta_1, beta_2, epsilon, dt;
 	std::vector<Tensor> OPTIM_TENSORS;
 	std::map<int, TensorCL> moment, second_moment;
 };
