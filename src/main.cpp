@@ -12,8 +12,8 @@ int main(int argc, char *argv[]) {
 		TensorUseOpenCL(&cl);
 		
 		MD_CL ZnO(2, 8, 8);
-		ZnO.LoadClusterFromFile("E:/0.xyz");
-		ZnO.TrainNN(100, 1);
+		ZnO.LoadClustersFromFolder("D:/ZnOtest");
+		ZnO.TrainNN(10000, 10);
 		/*vector<Tensor> K;
 		K.push_back(Tensor(Size(2, 4), 1.f, true));
 		K.push_back(Tensor(Size(3, 2), 1.f, true));

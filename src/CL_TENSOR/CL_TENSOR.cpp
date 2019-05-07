@@ -536,7 +536,7 @@ cl_tensor TensorCL::GetParam()
 
 int getrank(cl_tensor x)
 {
-	int rank = 0;
+	int rank = 1;
 	for (int i = 0; i < MAX_DIM; i++)
 	{
 		if (x.size[i] > 1)
@@ -563,9 +563,17 @@ cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b)
 cl_tensor GetSumTensor(cl_tensor x)
 {
 	x.rank = getrank(x);
-	x.length = x.length / x.size[x.rank - 1];
-	x.size[x.rank-1] = 1;
-	x.rank -= 1;
+	if (x.rank == 1)
+	{
+		x.length = 1;
+		x.size[x.rank - 1] = 1;
+	}
+	else
+	{
+		x.length = x.length / x.size[x.rank - 1];
+		x.size[x.rank - 1] = 1;
+		x.rank -= 1;
+	}
 	return x;
 }
 
@@ -609,6 +617,30 @@ void TensorUseOpenCL(OpenCL *cl)
 	diagfun.Initialize("tensor_diag", CL);
 }
 
+inline std::ostream& red(std::ostream &s)
+{
+	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hStdout,
+		FOREGROUND_RED | FOREGROUND_INTENSITY);
+	return s;
+}
+
+inline std::ostream& white(std::ostream &s)
+{
+	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hStdout,
+		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+	return s;
+}
+
+inline std::ostream& yellow(std::ostream &s)
+{
+	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hStdout,
+		FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
+	return s;
+}
+
 void PrintTensor(TensorCL & a)
 {
 	float* hd = a.GetData();
@@ -629,7 +661,17 @@ void PrintTensor(TensorCL & a)
 		{
 			for (int j = 0; j < T.size[1]; j++)
 			{
+				float val = hd[shift + T.size[0] * j + i];
+				if (!isfinite(val))
+				{
+					std::cout << red;
+				}
+				else if(abs(val)>1e5)
+				{
+					std::cout << yellow;
+				}
 				std::cout << hd[shift + T.size[0]*j + i] << " ";
+				std::cout << white;
 			}
 			std::cout << std::endl;
 		}
@@ -878,16 +920,23 @@ void TensorData::LoadData(std::vector< std::vector< std::vector<float> > > A)
 			}
 		}
 	}
+	{
+		ERROR_MSG("Invalid data size");
+	}
 }
 
 void TensorData::LoadData(std::vector< std::vector<float> > A)
 {
-	if (A.size() == param.size[0] && A[0].size() == param.size[1])
+	if (A.size() == param.size[1] && A[0].size() == param.size[0])
 	{
 		for (auto i = 0; i < A.size(); i++)
 		{
 			std::copy(A[i].begin(), A[i].end(), data.get() + A[i].size()*i);
 		}
+	}
+	else
+	{
+		ERROR_MSG("Invalid data size");
 	}
 }
 
@@ -896,6 +945,10 @@ void TensorData::LoadData(std::vector<float> A)
 	if (A.size() == param.size[0])
 	{
 		std::copy(A.begin(), A.end(), data.get());
+	}
+	else
+	{
+		ERROR_MSG("Invalid data size");
 	}
 }
 

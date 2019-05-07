@@ -15,49 +15,28 @@ void MD_CL::LoadCluster(Cluster C)
 	XYZs.push_back(Tensor(xyz));
 	Charges.push_back(Tensor(id));
 
-	Energies.push_back(C.Energy);
+	Energies.push_back(C.BindingEnergy);
 }
 
 MD_CL::MD_CL(int TypeNum, int N1, int N2) : Types(TypeNum), NN1(N1), NN2(N2)
 {
+	//first layer
+	K.push_back(Tensor(Size(NN1, 3), 1.0f / NN1, true)); //0
+	K.push_back(Tensor(Size(NN1, 1), 1.0f / NN1, true)); //1
+	K.push_back(Tensor(Size(NN1, 1), 1.0f / NN1, true)); //2
+	K.push_back(Tensor(Size(NN1, 1), 1.0f / NN1, true)); //3, bias
+
+	//second layer
+	K.push_back(Tensor(Size(NN1, NN1), 1.0f / NN1, true)); //4
+	K.push_back(Tensor(Size(NN1, 1), 1.0f / NN1, true)); //5, bias
 	
-	//BIASES
-	Tensor B1L1(NN1, 1); B1L1 = random(B1L1) / 1000;
-	Tensor B1L2(NN1, 1); B1L2 = random(B1L2) / 1000;
-	Tensor B2L1(NN2, 1); B2L1 = random(B2L1) / 1000;
-	Tensor B2L2(NN2, 1); B2L2 = random(B2L2) / 1000;
-	Tensor B2L3(1, 1); B2L3 = random(B2L3) / 1000;
+	//third layer
+	K.push_back(Tensor(Size(NN2, NN1), 1.0f / NN1, true)); //6
+	K.push_back(Tensor(Size(NN2, 1), 1.0f / NN2, true)); //7, bias
 
-	//Input layer
-	Tensor dXYZL1(NN1, 3); //inverted distances to first layer
-	Tensor T1L1(NN1, 1); //atom 1 type
-	Tensor T2L1(NN1, 1); //atom 2 type
-	dXYZL1 = random(dXYZL1) / 1000;
-	T1L1 = random(T1L1) / 1000;
-	T2L1 = random(T2L1) / 1000;
-	Weights.push_back(dXYZL1);
-	Weights.push_back(T1L1);
-	Weights.push_back(T2L1);
-	Weights.push_back(B1L1);
-	
-
-	//Rest of the layers
-	Tensor N1L2(NN1, NN1); N1L2 = random(N1L2) / 1000;
-	Tensor N2L1(NN1, NN2); N2L1 = random(N2L1) / 1000;
-	Tensor N2L2(NN2, NN2); N2L2 = random(N2L2) / 1000;
-	Tensor N2L3(1, NN2); N2L3 = random(N2L3) / 1000;
-
-	Weights.push_back(N1L2);
-	Weights.push_back(B1L2);
-
-	Weights.push_back(N2L1);
-	Weights.push_back(B2L1);
-
-	Weights.push_back(N2L2);
-	Weights.push_back(B2L2);
-
-	Weights.push_back(N2L3);
-	Weights.push_back(B2L3);
+	//output energy layer
+	K.push_back(Tensor(Size(1, NN2), 1.0f / NN2, true)); //8
+	K.push_back(Tensor(Size(1, 1), 1.0f, true)); //9, bias
 
 	InitOptimizer();
 }
@@ -65,33 +44,35 @@ MD_CL::MD_CL(int TypeNum, int N1, int N2) : Types(TypeNum), NN1(N1), NN2(N2)
 Tensor MD_CL::GetEnergy(int id)
 {
 	Tensor xyz = XYZs[id], charge = Charges[id];
+	int atom_num = xyz[1];
 	Tensor chargepairs = transpose(charge.repeat(charge[0]), 0,2);
-	Tensor xyzpairs = xyz.repeat(xyz[1]); //cooidinates repeated N times, first dimension is X Y Z
-	Tensor dist = (xyzpairs - transpose(xyzpairs,1,2) + transpose( repeat(diag(Tensor(xyz[1], xyz[1]),1e10f),3) ,0,2) )^(-1); //inverted distance between atom pairs
-	Tensor BUF1 = dot(Weights[0], dist) + dot(Weights[1], chargepairs)+dot(Weights[2], transpose(chargepairs, 1, 2));
-	Tensor BUF2 = repeat(repeat(Weights[3], xyz[1]), xyz[1]);
-	Tensor NETWORK1LAYER1 = max(BUF1 + BUF2);
-	//sum over all atom pairs
-	Tensor NETWORK1LAYER2 = sum(max(dot(Weights[4], NETWORK1LAYER1) + repeat(repeat(Weights[5], xyz[1]), xyz[1])));
-	Tensor NETWORK2LAYER1 = max(dot(Weights[6], NETWORK1LAYER2) + repeat(Weights[7], xyz[1]));
-	//Tensor NETWORK2LAYER2 = max(dot(Weights[8], NETWORK2LAYER1) + repeat(Weights[9], xyz[1]));
-	//return energy + energy shift
-	return sum(dot(Weights[10], NETWORK2LAYER1)) + Weights[11]*xyz[1];
+	Tensor xyzpairs = xyz.repeat(atom_num); //cooidinates repeated N times, first dimension is X Y Z
+	
+	Tensor dist = (xyzpairs - transpose(xyzpairs,1,2) + transpose( repeat(diag(Tensor(atom_num, atom_num),1e10f),3) ,0,2) )^(-1.f); //inverted distance between atom pairs
+	
+	Tensor X = tanh(dot(K[0], dist) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)) + repeat(repeat(K[3], atom_num), atom_num));
+	X = sum(tanh(dot(K[4], X) + repeat(repeat(K[5], atom_num), atom_num)));
+	X = tanh(dot(K[6], X) + repeat(K[7], atom_num));
+
+	return sum(dot(K[8], X)) + K[9]*xyz[1];
 }
 
 void MD_CL::TrainNN(int Iterations, int BatchSize)
 {
-	for (int it = 0; it < Iterations; it++)
+	float cost = 10;
+	for (int it = 0; it < Iterations && !(isnan(cost) || abs(cost)>1e8); it++)
 	{
-		Tensor COST;
-		int sh = std::min(rand() % XYZs.size(), XYZs.size() - BatchSize);
+		Tensor COST(Size(1));
+		int sh = 0;//+ std::min(rand() % XYZs.size(), XYZs.size() - BatchSize);
 		for (int i = sh; i < sh + BatchSize; i++)
 		{
-				COST = COST + (GetEnergy(i) - Energies[i]) ^ 2;
+			    COST  = ((GetEnergy(i) - Energies[i]))^2;
 		}
-		OPTIM.Optimize_Cost(COST);
-	//	PrintTAPE(true);
-		std::cout << "Current cost: " << COST() << std::endl;
+		OPTIM.Optimize_Cost(COST, false);
+		cost = COST();
+		//for (auto &k : K)
+		//	PrintTensor(k);
+		std::cout << "Current cost: " << cost << ", Current tape id: " << COST.ID() << std::endl;
 	}
 }
 
@@ -126,8 +107,8 @@ void MD_CL::LoadClustersFromFolder(std::string folder, int rand_rot_num)
 void MD_CL::InitOptimizer()
 {
 	OPTIM.setMethod(Optimizer::GRAD_DESC);
-	for (auto &k : Weights)
+	for (auto &k : K)
 		OPTIM.AddParameter(k);
 
-	OPTIM.setSpeed(0.05);
+	OPTIM.setSpeed(1e-12);
 }

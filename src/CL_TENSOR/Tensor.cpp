@@ -5,7 +5,7 @@
 
 int idt = 0;
 
-#define DEBUG true;
+#define DEBUG false;
 #define DEBUG_PRINT_ARGS true;
 
 std::string getOperationName(Tensor::OPERATION op)

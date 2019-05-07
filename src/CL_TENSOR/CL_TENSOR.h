@@ -97,7 +97,7 @@ public:
 	TensorCL operator>(float x);
 	TensorCL operator<(float x);
 
-	float operator()(int i = 1, int j = 1, int k = 1, int m = 1);
+	float operator()(int i = 0, int j = 0, int k = 0, int m = 0);
 
 	TensorCL random();
 	TensorCL sin();

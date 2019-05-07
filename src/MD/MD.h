@@ -35,6 +35,6 @@ private:
 	std::vector<float> Energies;
 
 	int NN1, NN2, Types;
-	std::vector<Tensor> Weights;
+	std::vector<Tensor> K;
 	Optimizer OPTIM;
 };

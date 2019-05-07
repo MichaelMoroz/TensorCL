@@ -310,9 +310,9 @@ __kernel void tensor_sum(__global float* C,
 	const int i = get_global_id(0);
 	cl_index id = get_index(i, Cdata);
 	float sum = 0.f;
-	for (int j = 0; j < Adata.size[Cdata.rank]; j++)
+	for (int j = 0; j < Adata.size[Adata.rank-1]; j++)
 	{
-		id.index[Cdata.rank] = j;
+		id.index[Adata.rank-1] = j;
 		sum += A[ID(id, Adata)];
 	}
 	
