@@ -11,10 +11,10 @@ int main(int argc, char *argv[]) {
 	{
 		TensorUseOpenCL(&cl);
 		
-		//MD_CL ZnO(2, 8, 8);
-		//ZnO.LoadClusterFromFile("E:/0.xyz");
-		//ZnO.TrainNN(100, 1);
-		vector<Tensor> K;
+		MD_CL ZnO(2, 8, 8);
+		ZnO.LoadClusterFromFile("E:/0.xyz");
+		ZnO.TrainNN(100, 1);
+		/*vector<Tensor> K;
 		K.push_back(Tensor(Size(2, 4), 1.f, true));
 		K.push_back(Tensor(Size(3, 2), 1.f, true));
 
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		PrintTAPE(false);
+		PrintTAPE(false);*/
 	}
 
 	system("pause");
