@@ -732,7 +732,7 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 	case Tensor::REPEAT:
 		rnk = VALUE_TAPE[outgrad_id].GetParam().rank;
 		N = VALUE_TAPE[outgrad_id].GetParam().size[rnk - 1];
-		AddDerivative(id_a, sum(Tensor(outgrad_id))/N);
+		AddDerivative(id_a, sum(Tensor(outgrad_id)));
 		break;
 	case Tensor::IF_COND:
 		AddDerivative(id_b, _if(Tensor(id_a), Tensor(outgrad_id), 0.f));

@@ -863,7 +863,7 @@ bool AreTensorsEqual(cl_tensor x, cl_tensor y)
 bool AreTensorsCompatible(cl_tensor x, cl_tensor y)
 {
 	bool comp = true;
-	comp = comp && (getrank(x) <= getrank(y));
+	comp = comp && (getrank(x) <= getrank(y) || (getrank(y) == 1 && getrank(x) == 2));
 
 	for (int i = 2; i < getrank(x); i++)
 	{
