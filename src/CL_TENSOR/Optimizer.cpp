@@ -68,11 +68,14 @@ void Optimizer::Optimize_Cost(Tensor & COST, bool print_grad)
 			grad.reset(new Gradient(cost_id));
 			for (Tensor &tensor : OPTIM_TENSORS)
 			{
-				//operate only on base tensors, we wont need to find the gradient of gradient descent anyway =)
-				tensor.GetTensor() -= grad->wrt(tensor).GetTensor()*dt;
-				if (print_grad)
+				if (grad->wrt(tensor).ID() != -1)
 				{
-					PrintTensor(grad->wrt(tensor));
+					//operate only on base tensors, we wont need to find the gradient of gradient descent anyway =)
+					tensor.GetTensor() -= grad->wrt(tensor).GetTensor()*dt;
+					if (print_grad)
+					{
+						PrintTensor(grad->wrt(tensor));
+					}
 				}
 			}
 			break;
@@ -80,14 +83,17 @@ void Optimizer::Optimize_Cost(Tensor & COST, bool print_grad)
 			grad.reset(new Gradient(cost_id));
 			for (Tensor &tensor : OPTIM_TENSORS)
 			{
-				moment[tensor.ID()] = moment[tensor.ID()] * beta_1 + grad->wrt(tensor).GetTensor() * (1 - beta_1);
-				second_moment[tensor.ID()] = second_moment[tensor.ID()] * beta_2 + pow(grad->wrt(tensor).GetTensor(), 2.f)*(1 - beta_2);
-				TensorCL mhat = moment[tensor.ID()] / (1 - pow(beta_1, iterations));
-				TensorCL vhat = second_moment[tensor.ID()] / (1 - pow(beta_2, iterations));
-				tensor.GetTensor() -= mhat * pow(vhat + epsilon, -0.5f)*dt;
-				if (print_grad)
+				if (grad->wrt(tensor).ID() != -1)
 				{
-					PrintTensor(grad->wrt(tensor));
+					moment[tensor.ID()] = moment[tensor.ID()] * beta_1 + grad->wrt(tensor).GetTensor() * (1 - beta_1);
+					second_moment[tensor.ID()] = second_moment[tensor.ID()] * beta_2 + pow(grad->wrt(tensor).GetTensor(), 2.f)*(1 - beta_2);
+					TensorCL mhat = moment[tensor.ID()] / (1 - pow(beta_1, iterations));
+					TensorCL vhat = second_moment[tensor.ID()] / (1 - pow(beta_2, iterations));
+					tensor.GetTensor() -= mhat * pow(vhat + epsilon, -0.5f)*dt;
+					if (print_grad)
+					{
+						PrintTensor(grad->wrt(tensor));
+					}
 				}
 			}
 			break;

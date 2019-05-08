@@ -786,7 +786,7 @@ Tensor& Gradient::wrt(int tensor_id)
 	}
 	else
 	{
-		return Tensor(tensor_id);
+		return Tensor(-1);
 	}
 }
 

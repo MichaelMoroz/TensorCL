@@ -13,7 +13,9 @@ int main(int argc, char *argv[]) {
 		
 		MD_CL ZnO(2, 16, 16);
 		ZnO.LoadClustersFromFolder("E:/ZnOTest", 1);
-		ZnO.TrainNN(10000, 1);
+		ZnO.DecoupleNN(5000);
+		ZnO.PrintEnergies();
+		ZnO.TrainNN(10000, 2);
 		/*Optimizer OPTIM(Optimizer::ADAM);
 		vector<Tensor> K;
 		K.push_back(Tensor(Size(2, 4), 1.f, true));

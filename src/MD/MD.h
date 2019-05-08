@@ -17,6 +17,10 @@ public:
 
 	Tensor GetEnergy(int ClusterID);
 
+	void PrintEnergies();
+
+	void DecoupleNN(int Iterations);
+
 	void TrainNN(int Iterations, int BatchSize);
 
 	void CalculateClusterEnergy(int cluster_id);
