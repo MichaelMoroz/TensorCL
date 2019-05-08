@@ -195,7 +195,7 @@ Tensor Tensor::tanh()
 	return Tensor(VALUE_TAPE[this->tape_id].tanh(), std::pair<int, int>(this->tape_id, -1), TANH);
 }
 
-Tensor Tensor::operator^(float y)
+Tensor Tensor::pow(float y)
 {
 	if (y == 1) //dont use pow if power is = 1
 	{
@@ -209,7 +209,7 @@ Tensor Tensor::operator^(float y)
 	else
 	{
 		FLOAT_TAPE[idt] = y;
-		return Tensor(VALUE_TAPE[this->tape_id] ^ y, std::pair<int, int>(this->tape_id, -1), POW);
+		return Tensor(VALUE_TAPE[this->tape_id].pow(y), std::pair<int, int>(this->tape_id, -1), POW);
 	}
 }
 
@@ -640,7 +640,7 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 		break;
 	case Tensor::DIV_T:
 		AddDerivative(id_a, Tensor(outgrad_id) / Tensor(id_b));
-		AddDerivative(id_b, -Tensor(outgrad_id)*Tensor(id_a)*(Tensor(id_b) ^ (-2.f)));
+		AddDerivative(id_b, -Tensor(outgrad_id)*Tensor(id_a)*pow(Tensor(id_b),-2.f));
 		break;
 	case Tensor::NEG:
 		AddDerivative(id_a, -Tensor(outgrad_id));
@@ -668,17 +668,17 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 		AddDerivative(id_a, -sin(Tensor(id_a))*Tensor(outgrad_id));
 		break;
 	case Tensor::TAN:
-		AddDerivative(id_a, Tensor(outgrad_id) * (cos(Tensor(id_a)) ^ (-2)) );
+		AddDerivative(id_a, Tensor(outgrad_id) * pow(cos(Tensor(id_a)), -2.f) );
 		break;
 	case Tensor::LOG:
 		AddDerivative(id_a, Tensor(outgrad_id) / Tensor(id_a));
 		break;
 	case Tensor::TANH:
-		AddDerivative(id_a, Tensor(outgrad_id) * (1 - Tensor(out_id) ^ 2));
+		AddDerivative(id_a, Tensor(outgrad_id) * (1 - pow(Tensor(out_id), 2)));
 		break;
 	case Tensor::POW:
 		num = FLOAT_TAPE[out_id];
-		AddDerivative(id_a, Tensor(outgrad_id) * (Tensor(id_a) ^ (num - 1)) * num);
+		AddDerivative(id_a, Tensor(outgrad_id) * pow(Tensor(id_a), num - 1.f) * num);
 		break;
 	case Tensor::EXP:
 		AddDerivative(id_a, Tensor(outgrad_id) * Tensor(out_id));
@@ -730,7 +730,9 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 		AddDerivative(id_b, P2);
 		break;
 	case Tensor::REPEAT:
-		AddDerivative(id_a, sum(Tensor(outgrad_id)));
+		rnk = VALUE_TAPE[outgrad_id].GetParam().rank;
+		N = VALUE_TAPE[outgrad_id].GetParam().size[rnk - 1];
+		AddDerivative(id_a, sum(Tensor(outgrad_id))/N);
 		break;
 	case Tensor::IF_COND:
 		AddDerivative(id_b, _if(Tensor(id_a), Tensor(outgrad_id), 0.f));
@@ -806,9 +808,5 @@ void Gradient::AddDerivative(int pnode, Tensor gnode)
 		{
 			dydx[pnode] = gnode;
 		}
-	}
-	else
-	{
-		int kek = sin(0.5f);
 	}
 }

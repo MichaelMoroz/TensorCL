@@ -62,7 +62,7 @@ public:
 	Tensor exp();
 	Tensor log();
 	Tensor tanh();
-	Tensor operator^(float y); //power
+	Tensor pow(float y); //power
 	int operator[] (int dim);
 
 	Tensor sum();

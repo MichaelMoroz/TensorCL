@@ -81,6 +81,11 @@ public:
 	TensorCL& operator*=(TensorCL &X);
 	TensorCL& operator/=(TensorCL &X);
 
+	TensorCL& operator+=(float &X);
+	TensorCL& operator-=(float &X);
+	TensorCL& operator*=(float &X);
+	TensorCL& operator/=(float &X);
+
 	TensorCL operator+(TensorCL &X);
 	TensorCL operator-(TensorCL &X);
 	TensorCL operator*(TensorCL &X);
@@ -106,7 +111,7 @@ public:
 	TensorCL exp();
 	TensorCL log();
 	TensorCL tanh();
-	TensorCL operator^(float y); //power
+	TensorCL pow(float y);
 
 	TensorCL sum();
 	TensorCL min(TensorCL &X);
@@ -166,6 +171,7 @@ template<typename T> T tan(T& X);
 template<typename T> T exp(T& X);
 template<typename T> T log(T& X);
 template<typename T> T sum(T& X);
+template<typename T> T pow(T& X, float y);
 template<typename T> T tanh(T& X);
 
 template<typename T> T min(T &X, T& Y);
@@ -273,6 +279,12 @@ template<typename T>
 inline T sum(T& X)
 {
 	return X.sum();
+}
+
+template<typename T>
+inline T pow(T & X, float y)
+{
+	return X.pow(y);
 }
 
 template<typename T>

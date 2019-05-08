@@ -174,6 +174,26 @@ TensorCL& TensorCL::operator/=(TensorCL &X)
 	return *this = *this / X;
 }
 
+TensorCL & TensorCL::operator+=(float & X)
+{
+	return *this = *this + X;
+}
+
+TensorCL & TensorCL::operator-=(float & X)
+{
+	return *this = *this - X;
+}
+
+TensorCL & TensorCL::operator*=(float & X)
+{
+	return *this = *this * X;
+}
+
+TensorCL & TensorCL::operator/=(float & X)
+{
+	return *this = *this / X;
+}
+
 TensorCL::TensorCL(TensorCL &X, float fill)
 {
 	param = X.param;
@@ -438,7 +458,7 @@ TensorCL TensorCL::tanh()
 	return C;
 }
 
-TensorCL TensorCL::operator^(float y)
+TensorCL TensorCL::pow(float y)
 {
 	TensorCL C(GetParam()); //create a temporary array
 	powfun.SetRange(CL->group_size[0], 1, param.length, 1);

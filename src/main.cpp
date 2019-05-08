@@ -11,26 +11,34 @@ int main(int argc, char *argv[]) {
 	{
 		TensorUseOpenCL(&cl);
 		
-		MD_CL ZnO(2, 8, 8);
-		ZnO.LoadClustersFromFolder("D:/ZnOtest");
-		ZnO.TrainNN(10000, 10);
-		/*vector<Tensor> K;
+		MD_CL ZnO(2, 16, 16);
+		ZnO.LoadClustersFromFolder("E:/ZnOTest", 1);
+		ZnO.TrainNN(10000, 1);
+		/*Optimizer OPTIM(Optimizer::ADAM);
+		vector<Tensor> K;
 		K.push_back(Tensor(Size(2, 4), 1.f, true));
 		K.push_back(Tensor(Size(3, 2), 1.f, true));
+		K.push_back(Tensor(Size(2), 0.f, true));
+		K.push_back(Tensor(Size(3), 0.f, true));
 
-		Optimizer OPTIM(Optimizer::ADAM);
-		OPTIM.setSpeed(0.5);
-
-		Tensor A(Size(4, 4, 2), 0.2f, true), B(Size(3,4),0.2f,true);
 		for (Tensor &W : K)
 		{
 			OPTIM.AddParameter(W);
 			//PrintTensor(W);
 		}
 
+	
+		
+		OPTIM.setSpeed(0.06);
+
+		Tensor A(Size(4, 4, 2), 0.2f, true), B(Size(3,4),0.2f,true);
+		Tensor C(Size(4, 4, 2), 0.2f, true), D(Size(3, 4), 0.2f, true);
+	
 		for (int i = 0; i < 10000; i++)
 		{
-			Tensor COST = (dot(K[1], sum(max(dot(K[0], A)))) - B) ^ 2;
+			Tensor COST(Size(3, 4));
+			COST = COST + (dot(K[1], sum(max(dot(K[0], A) + repeat(repeat(K[2], 4), 2)))) + repeat(K[3], 4) - B) ^ 2;
+			COST = COST + (dot(K[1], sum(max(dot(K[0], C) + repeat(repeat(K[2], 4), 2)))) + repeat(K[3], 4) - D) ^ 2;
 			OPTIM.Optimize_Cost(COST);
 			cout << "COST:" << sum(sum(COST))() << ", Tape size: "<< TAPE_SIZE() << endl;
 			for (Tensor &W : K)

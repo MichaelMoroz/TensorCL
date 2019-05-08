@@ -21,22 +21,22 @@ void MD_CL::LoadCluster(Cluster C)
 MD_CL::MD_CL(int TypeNum, int N1, int N2) : Types(TypeNum), NN1(N1), NN2(N2)
 {
 	//first layer
-	K.push_back(Tensor(Size(NN1, 3), 1.0f / NN1, true)); //0
-	K.push_back(Tensor(Size(NN1, 1), 1.0f / NN1, true)); //1
-	K.push_back(Tensor(Size(NN1, 1), 1.0f / NN1, true)); //2
-	K.push_back(Tensor(Size(NN1, 1), 1.0f / NN1, true)); //3, bias
+	K.push_back(Tensor(Size(NN1, 3), 0.01f / NN1, true)); //0
+	K.push_back(Tensor(Size(NN1, 1), 0.01f / NN1, true)); //1
+	K.push_back(Tensor(Size(NN1, 1), 0.01f / NN1, true)); //2
+	K.push_back(Tensor(Size(NN1, 1), 0.0f, true)); //3, bias
 
 	//second layer
-	K.push_back(Tensor(Size(NN1, NN1), 1.0f / NN1, true)); //4
-	K.push_back(Tensor(Size(NN1, 1), 1.0f / NN1, true)); //5, bias
+	K.push_back(Tensor(Size(NN1, NN1), 0.01f / NN1, true)); //4
+	K.push_back(Tensor(Size(NN1, 1), 0.0f, true)); //5, bias
 	
 	//third layer
-	K.push_back(Tensor(Size(NN2, NN1), 1.0f / NN1, true)); //6
-	K.push_back(Tensor(Size(NN2, 1), 1.0f / NN2, true)); //7, bias
+	K.push_back(Tensor(Size(NN2, NN1), 0.1f / NN1, true)); //6
+	K.push_back(Tensor(Size(NN2, 1), 0.0f, true)); //7, bias
 
 	//output energy layer
-	K.push_back(Tensor(Size(1, NN2), 1.0f / NN2, true)); //8
-	K.push_back(Tensor(Size(1, 1), 1.0f, true)); //9, bias
+	K.push_back(Tensor(Size(1, NN2), 0.1f / NN2, true)); //8
+	K.push_back(Tensor(Size(1, 1), 0.0f, true)); //9, bias
 
 	InitOptimizer();
 }
@@ -48,7 +48,7 @@ Tensor MD_CL::GetEnergy(int id)
 	Tensor chargepairs = transpose(charge.repeat(charge[0]), 0,2);
 	Tensor xyzpairs = xyz.repeat(atom_num); //cooidinates repeated N times, first dimension is X Y Z
 	
-	Tensor dist = (xyzpairs - transpose(xyzpairs,1,2) + transpose( repeat(diag(Tensor(atom_num, atom_num),1e10f),3) ,0,2) )^(-1.f); //inverted distance between atom pairs
+	Tensor dist = pow(xyzpairs - transpose(xyzpairs,1,2) + transpose( repeat(diag(Tensor(atom_num, atom_num),1e10f),3) ,0,2), -1.f); //inverted distance between atom pairs
 	
 	Tensor X = tanh(dot(K[0], dist) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)) + repeat(repeat(K[3], atom_num), atom_num));
 	X = sum(tanh(dot(K[4], X) + repeat(repeat(K[5], atom_num), atom_num)));
@@ -57,17 +57,30 @@ Tensor MD_CL::GetEnergy(int id)
 	return sum(dot(K[8], X)) + K[9]*xyz[1];
 }
 
+float vectoravg(std::vector<float> &a)
+{
+	float avg = 0.f;
+	for (auto &x : a)
+	{
+		avg += x;
+	}
+	return avg / (float)a.size();
+}
+
 void MD_CL::TrainNN(int Iterations, int BatchSize)
 {
 	float cost = 10;
-	for (int it = 0; it < Iterations && !(isnan(cost) || abs(cost)>1e8); it++)
+	for (int it = 0; it < Iterations && isfinite(cost); it++)
 	{
 		Tensor COST(Size(1));
 		int sh = 0;//+ std::min(rand() % XYZs.size(), XYZs.size() - BatchSize);
-		for (int i = sh; i < sh + BatchSize; i++)
+		for (int i = sh; i < std::min(sh + BatchSize,(int)Energies.size()); i++)
 		{
-			    COST  = ((GetEnergy(i) - Energies[i]))^2;
+			Tensor E = GetEnergy(i);
+			std::cout << "Energy: " << i << " " << E() << " " << Energies[i] << std::endl;
+		    COST  = COST + pow(E - Energies[i],2.f);
 		}
+		std::cout << "Energy avg: " << vectoravg(Energies) << std::endl;
 		OPTIM.Optimize_Cost(COST, false);
 		cost = COST();
 		//for (auto &k : K)
@@ -107,8 +120,9 @@ void MD_CL::LoadClustersFromFolder(std::string folder, int rand_rot_num)
 void MD_CL::InitOptimizer()
 {
 	OPTIM.setMethod(Optimizer::GRAD_DESC);
+	OPTIM.setRegularization(Optimizer::L2, 0.005);
 	for (auto &k : K)
 		OPTIM.AddParameter(k);
 
-	OPTIM.setSpeed(1e-12);
+	OPTIM.setSpeed(0.0003);
 }

@@ -14,11 +14,17 @@ public:
 		ESGRAD //hybrid method
 	};
 
+	enum REGULARIZATION
+	{
+		NO, L1, L2
+	};
+
 	Optimizer();
 	Optimizer(OPTIMIZATION_METHOD method);
 
 	void setSpeed(float speed);
 	void setMethod(OPTIMIZATION_METHOD method);
+	void setRegularization(REGULARIZATION method, float rk);
 	void AddParameter(Tensor &X);
 	void Optimize_Cost(Tensor & COST, bool print_grad = false);
 
@@ -26,9 +32,10 @@ public:
 
 protected:
 	OPTIMIZATION_METHOD method_used;
+	REGULARIZATION regul_used;
 	int cost_id;
 	int iterations;
-	float beta_1, beta_2, epsilon, dt;
+	float beta_1, beta_2, epsilon, dt, lambda;
 	std::vector<Tensor> OPTIM_TENSORS;
 	std::map<int, TensorCL> moment, second_moment;
 };
