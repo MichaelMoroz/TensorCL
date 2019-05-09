@@ -44,9 +44,9 @@ cl_index get_index(int id, cl_tensor info)
 {
 	cl_index idx;
 	int sh = 1;
-	for (int i = 0; i < info.rank; i++)
+	for (int i = 0; i < MAX_DIM; i++)
 	{
-		idx.index[i] = floor((float)id/ (float)sh) - info.size[i] * floor((float)id / (float)( info.size[i] * sh ));
+		idx.index[i] = id/sh - info.size[i] * (id /(info.size[i] * sh));
 		sh *= info.size[i];
 	}
 	return idx;
@@ -278,7 +278,11 @@ __kernel void tensor_transpose(__global float* C,
 {
 	const int i = get_global_id(0);
 	if (i < Cdata.length)
-		C[i] = A[ID(transpose(get_index(i, Cdata), dim_a, dim_b), Adata)];
+	{
+		int id = ID(transpose(get_index(i, Cdata), dim_a, dim_b), Adata);
+		if(id < Adata.length)
+			C[i] = A[id];
+	}
 }
 
 __kernel void tensor_diag(__global float* C,
@@ -299,7 +303,11 @@ __kernel void tensor_repeat(__global float* C,
 {
 	const int i = get_global_id(0);
 	if (i < Cdata.length)
-		C[i] = A[ID(get_index(i, Cdata), Adata)];
+	{
+		int id = ID(get_index(i, Cdata), Adata);
+		if(id < Adata.length)
+			C[i] = A[id];
+	}
 }
 
 __kernel void tensor_sum(__global float* C,
@@ -313,7 +321,9 @@ __kernel void tensor_sum(__global float* C,
 	for (int j = 0; j < Adata.size[Adata.rank-1]; j++)
 	{
 		id.index[Adata.rank-1] = j;
-		sum += A[ID(id, Adata)];
+		int idx = ID(id, Adata);
+		if(idx < Adata.length)
+			sum += A[idx];
 	}
 	
 	if (i < Cdata.length)
@@ -364,8 +374,10 @@ __kernel void tensor_dot_product( __global float* C,
 			const int tiledRow = TS * t + row;
 			const int tiledCol = TS * t + col;
 			
-			Asub[col][row] = (tiledCol < K) ? (A[tiledCol*M + globalRow + shiftA]) : (0.f);
-			Bsub[col][row] = (tiledRow < K) ? (B[globalCol*K + tiledRow + shiftB]) : (0.f);
+			int idA = tiledCol*M + globalRow + shiftA;
+			int idB	= globalCol*K + tiledRow + shiftB;
+			Asub[col][row] = (tiledCol < K && idA < Adata.length) ? (A[idA]) : (0.f);
+			Bsub[col][row] = (tiledRow < K && idB < Bdata.length) ? (B[idB]) : (0.f);
 
 			// Synchronise to make sure the tile is loaded
 			barrier(CLK_LOCAL_MEM_FENCE);

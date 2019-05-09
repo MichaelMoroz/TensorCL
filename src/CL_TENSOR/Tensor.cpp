@@ -5,8 +5,12 @@
 
 int idt = 0;
 
-#define DEBUG false;
-#define DEBUG_PRINT_ARGS true;
+#define DEBUG false
+#define DEBUG_PRINT_VALUE false
+#define DEBUG_PRINT_ARGS true
+
+#define DEBUG_VJP false
+#define DEBUG_PRINT_TAPE true
 
 std::string getOperationName(Tensor::OPERATION op)
 {
@@ -75,7 +79,6 @@ std::map<int, std::pair<int, int> > PARENTS_TAPE;
 std::map<int, std::vector<int> > CHILDS_TAPE;
 std::map<int, float> FLOAT_TAPE;
 std::map<int, std::pair<int, int> > TRANSPOSE_TAPE;
-std::map<int, int> REPEAT_TAPE;
 std::map<int, int> NUMBER_OF_COPIES;
 
 Tensor::Tensor()
@@ -135,21 +138,26 @@ void Tensor::init(TensorCL & X, std::pair<int, int> parents, OPERATION op)
 
 	#if DEBUG
 		std::cout << "TapeID_" << idt << " :: " << getOperationName(op) << "(arg1_id = " << parents.first << ", arg2_id = " << parents.second << ") " << std::endl;
+		#if DEBUG_PRINT_VALUE
+			#if DEBUG_PRINT_ARGS
+			if (parents.first != -1)
+			{
+				std::cout << "arg1_id = " << parents.first << std::endl;
+				PrintTensor(VALUE_TAPE[parents.first]);
+			}
+			if (parents.second != -1)
+			{
+				std::cout << "arg1_id = " << parents.second << std::endl;
+				PrintTensor(VALUE_TAPE[parents.second]);
+			}
+			#endif
 		
-		#if DEBUG_PRINT_ARGS
-		if (parents.first != -1)
-		{
-			std::cout << "arg1_id = " << parents.first << std::endl;
-			PrintTensor(VALUE_TAPE[parents.first]);
-		}
-		if (parents.second != -1)
-		{
-			std::cout << "arg1_id = " << parents.second << std::endl;
-			PrintTensor(VALUE_TAPE[parents.second]);
-		}
+			PrintTensor(VALUE_TAPE[idt]);
 		#endif
-		
-		PrintTensor(VALUE_TAPE[idt]);
+
+		#if DEBUG_PRINT_TAPE
+					PrintTAPE(false);
+		#endif
 	#endif
 
 	idt++;
@@ -264,7 +272,6 @@ Tensor Tensor::transpose(int dim_a, int dim_b)
 
 Tensor Tensor::repeat(int n)
 {
-	REPEAT_TAPE[idt] = n;
 	return Tensor(VALUE_TAPE[this->tape_id].repeat(n), std::pair<int, int>(this->tape_id, -1), REPEAT);
 }
 
@@ -318,7 +325,6 @@ void RemoveFromTape(int id)
 	CHILDS_TAPE.erase(id);
 	FLOAT_TAPE.erase(id);
 	TRANSPOSE_TAPE.erase(id);
-	REPEAT_TAPE.erase(id);
 }
 
 void Tensor::RecursiveDestructionChilds(int id)
@@ -343,10 +349,13 @@ void Tensor::RecursiveDestructionParents(int id)
 	{
 		if (NUMBER_OF_COPIES[id] == 0)
 		{
-			RecursiveDestructionParents(PARENTS_TAPE[id].first);
-			RecursiveDestructionParents(PARENTS_TAPE[id].second);
-			
-			RemoveFromTape(id);
+			if (AreAllChildsDestroyed(id))
+			{
+				RecursiveDestructionParents(PARENTS_TAPE[id].first);
+				RecursiveDestructionParents(PARENTS_TAPE[id].second);
+
+				RemoveFromTape(id);
+			}
 		}
 	}
 }
@@ -355,11 +364,14 @@ bool Tensor::AreAllChildsDestroyed(int id)
 {
 	bool tree_destroyed = NUMBER_OF_COPIES[id] == 0;
 
-	for (auto &child_id : FindChilds(id))
+	if (tree_destroyed)
 	{
-		tree_destroyed = tree_destroyed && AreAllChildsDestroyed(child_id);
+		for (auto &child_id : FindChilds(id))
+		{
+			tree_destroyed = tree_destroyed && AreAllChildsDestroyed(child_id);
+		}
 	}
-
+	
 	return tree_destroyed;
 }
 
@@ -367,7 +379,8 @@ void Tensor::Destroy(int id)
 {
 	if (VALUE_TAPE.count(id) != 0) //if not yet deleted
 	{
-		NUMBER_OF_COPIES[id] -= 1;
+		if(NUMBER_OF_COPIES[id] > 0)
+			NUMBER_OF_COPIES[id] -= 1;
 		if (AreAllChildsDestroyed(id))
 		{
 			RecursiveDestructionParents(id);
@@ -571,6 +584,18 @@ void PrintTAPE(bool disp_value)
 	}
 }
 
+bool exists(int id)
+{
+	if (VALUE_TAPE.count(id) != 0)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 bool hasvisited(int id, std::map<int, bool> &visited)
 {
 	if (visited.count(id) != 0) //if exists
@@ -583,33 +608,38 @@ bool hasvisited(int id, std::map<int, bool> &visited)
 	}
 }
 
-void toposort_recursive(int node, std::stack<int> &Stack, std::map<int, bool> &visited)
+void toposort_recursive(int node, std::vector<int> &Stack, std::map<int, bool> &visited)
 {
 	visited[node] = true;
 
-	if (PARENTS_TAPE[node].first != -1 && !hasvisited(PARENTS_TAPE[node].first, visited))
+	if (PARENTS_TAPE[node].first != -1 
+		&& !hasvisited(PARENTS_TAPE[node].first, visited) 
+		&& exists(PARENTS_TAPE[node].first))
 	{
 		toposort_recursive(PARENTS_TAPE[node].first, Stack, visited);
 	}
 
-	if (PARENTS_TAPE[node].second != -1 && !hasvisited(PARENTS_TAPE[node].second, visited))
+	if (PARENTS_TAPE[node].second != -1 
+		&& !hasvisited(PARENTS_TAPE[node].second, visited) 
+		&& exists(PARENTS_TAPE[node].second))
 	{
 		toposort_recursive(PARENTS_TAPE[node].second, Stack, visited);
 	}
 
-	Stack.push(node);
+	Stack.push_back(node);
 }
 
 std::vector<int> toposort(int end_node)
 {
-	std::stack<int> Stack;
+	std::vector<int> Stack;
 	std::map<int, bool> visited;
 	toposort_recursive(end_node, Stack, visited);
+
 	std::vector<int> sorted;
 	while (Stack.empty() == false)
 	{
-		sorted.push_back(Stack.top());
-		Stack.pop();
+		sorted.push_back(Stack.back());
+		Stack.pop_back();
 	}
 	return sorted;
 }
@@ -621,8 +651,33 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 	int id_b = PARENTS_TAPE[out_id].second;
 	float num;
 	int dim_a, dim_b, rnk, N, DA, DB;
-
 	Tensor P1(id_a), P2(id_b);
+
+#if DEBUG_VJP
+	std::cout << "GradID: " << outgrad_id << ", OutID: " << out_id << ", Operation: " <<getOperationName(op) << "(arg1_id = " << id_a << ", arg2_id = " << id_b <<")"<< std::endl;
+	
+	#if DEBUG_PRINT_VALUE
+		PrintTensor(VALUE_TAPE[outgrad_id]);
+
+		PrintTensor(VALUE_TAPE[out_id]);
+
+		if (id_a != -1)
+		{
+			PrintTensor(VALUE_TAPE[id_a]);
+		}
+
+		if (id_b != -1)
+		{
+			PrintTensor(VALUE_TAPE[id_b]);
+		}
+	#endif
+
+	#if DEBUG_PRINT_TAPE
+		PrintTAPE(false);
+	#endif
+
+#endif
+	
 	//-1 means no derivative
 	switch (op)
 	{
@@ -746,8 +801,14 @@ Gradient::Gradient(Tensor END)
 {
 	Tensor outgrad(END, 1.f); //initial gradient
 	dydx[END.ID()] = outgrad;
-
-	for (auto &node_id : toposort(END.ID()))
+	#if DEBUG_VJP
+		PrintTAPE(false);
+	#endif
+	std::vector<int> toposorted_nodes = toposort(END.ID());
+	#if DEBUG_VJP
+		PrintTAPE(false);
+	#endif
+	for (auto &node_id : toposorted_nodes)
 	{
 		int grad_id = dydx[node_id].ID();
 		if (OPERATION_TAPE[node_id] != Tensor::NONE)
@@ -802,7 +863,7 @@ void Gradient::AddDerivative(int pnode, Tensor gnode)
 	{
 		if (dydx.count(pnode) != 0) //if a derivative already exists exists
 		{
-			dydx[pnode] = gnode + dydx[pnode];
+			dydx[pnode] = dydx[pnode] + gnode;
 		}
 		else
 		{
