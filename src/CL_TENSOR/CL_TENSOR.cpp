@@ -554,6 +554,13 @@ cl_tensor TensorCL::GetParam()
 	return param;
 }
 
+Size TensorCL::GetSize()
+{
+	Size size;
+	size.param = this->param;
+	return size;
+}
+
 int getrank(cl_tensor x)
 {
 	int rank = 1;

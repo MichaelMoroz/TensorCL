@@ -36,6 +36,11 @@ public:
 	Tensor& operator=(Tensor &&X);
 	Tensor& operator=(float a);
 
+	template<typename T> Tensor& operator+=(T X);
+	template<typename T> Tensor& operator-=(T X);
+	template<typename T> Tensor& operator*=(T X);
+	template<typename T> Tensor& operator/=(T X);
+
 	Tensor operator+(Tensor &X);
 	Tensor operator-(Tensor &X);
 	Tensor operator*(Tensor &X);
@@ -82,6 +87,8 @@ public:
 
 	TensorCL& GetTensor();
 
+	Size GetSize();
+
 	int ID();
 
 protected:
@@ -119,3 +126,27 @@ protected:
 	void AddDerivative(int pnode, Tensor gnode);
 	std::map<int, Tensor> dydx;
 };
+
+template<typename T>
+inline Tensor & Tensor::operator+=(T X)
+{
+	return *this = *this + X;
+}
+
+template<typename T>
+inline Tensor & Tensor::operator-=(T X)
+{
+	return *this = *this - X;
+}
+
+template<typename T>
+inline Tensor & Tensor::operator*=(T X)
+{
+	return *this = *this * X;
+}
+
+template<typename T>
+inline Tensor & Tensor::operator/=(T X)
+{
+	return *this = *this / X;
+}

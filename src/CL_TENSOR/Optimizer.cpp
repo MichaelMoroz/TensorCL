@@ -1,5 +1,8 @@
 #include "Optimizer.h"
 
+#define DEBUG_OPTIM false
+#define DEBUG_PRINT_MOMENTS true
+
 Optimizer::Optimizer()
 {
 	method_used = NONE;
@@ -22,6 +25,9 @@ Optimizer::Optimizer(OPTIMIZATION_METHOD method)
 void Optimizer::setSpeed(float speed)
 {
 	dt = speed;
+	beta_1 = 0.9f;
+	beta_2 = 0.999f;
+	epsilon = 1e-4f;
 }
 
 void Optimizer::setMethod(OPTIMIZATION_METHOD method)
@@ -45,8 +51,8 @@ void Optimizer::AddParameter(Tensor & X)
 		switch (method_used)
 		{
 		case ADAM:
-			moment[X.ID()] = TensorCL(X.GetTensor(), 0.f);
-			second_moment[X.ID()] = TensorCL(X.GetTensor(), 0.f);
+			moment[X.ID()] = TensorCL(X.GetSize(), 0.f);
+			second_moment[X.ID()] = TensorCL(X.GetSize(), 0.f);
 			break;
 		default:
 			break;
@@ -54,7 +60,7 @@ void Optimizer::AddParameter(Tensor & X)
 	}
 }
 
-void Optimizer::Optimize_Cost(Tensor & COST, bool print_grad)
+void Optimizer::Optimize_Cost(Tensor & COST)
 {
 	if (method_used != NONE)
 	{
@@ -72,10 +78,9 @@ void Optimizer::Optimize_Cost(Tensor & COST, bool print_grad)
 				{
 					//operate only on base tensors, we wont need to find the gradient of gradient descent anyway =)
 					tensor.GetTensor() -= grad->wrt(tensor).GetTensor()*dt;
-					if (print_grad)
-					{
+					#if (DEBUG_OPTIM)
 						PrintTensor(grad->wrt(tensor));
-					}
+					#endif
 				}
 			}
 			break;
@@ -85,15 +90,26 @@ void Optimizer::Optimize_Cost(Tensor & COST, bool print_grad)
 			{
 				if (grad->wrt(tensor).ID() != -1)
 				{
-					moment[tensor.ID()] = moment[tensor.ID()] * beta_1 + grad->wrt(tensor).GetTensor() * (1 - beta_1);
-					second_moment[tensor.ID()] = second_moment[tensor.ID()] * beta_2 + pow(grad->wrt(tensor).GetTensor(), 2.f)*(1 - beta_2);
-					TensorCL mhat = moment[tensor.ID()] / (1 - pow(beta_1, iterations));
-					TensorCL vhat = second_moment[tensor.ID()] / (1 - pow(beta_2, iterations));
-					tensor.GetTensor() -= mhat * pow(vhat + epsilon, -0.5f)*dt;
-					if (print_grad)
+					if (iterations == 1)
 					{
-						PrintTensor(grad->wrt(tensor));
+						moment[tensor.ID()] = grad->wrt(tensor).GetTensor();
+						second_moment[tensor.ID()] = pow(grad->wrt(tensor).GetTensor(), 2.f);
 					}
+					else
+					{
+						moment[tensor.ID()] = (moment[tensor.ID()] * beta_1) + (grad->wrt(tensor).GetTensor()  * (1.f - beta_1));
+						second_moment[tensor.ID()] = (second_moment[tensor.ID()] * beta_2) + (pow(grad->wrt(tensor).GetTensor(), 2.f)*(1.f - beta_2));
+					}
+
+					tensor.GetTensor() -= moment[tensor.ID()] * pow(second_moment[tensor.ID()] + epsilon, -0.5f)*dt;
+					#if (DEBUG_OPTIM)
+						PrintTensor(grad->wrt(tensor));
+						if (DEBUG_PRINT_MOMENTS)
+						{
+							PrintTensor(moment[tensor.ID()]);
+							PrintTensor(second_moment[tensor.ID()]);
+						}
+					#endif
 				}
 			}
 			break;

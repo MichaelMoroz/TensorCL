@@ -26,7 +26,7 @@ public:
 	void setMethod(OPTIMIZATION_METHOD method);
 	void setRegularization(REGULARIZATION method, float rk);
 	void AddParameter(Tensor &X);
-	void Optimize_Cost(Tensor & COST, bool print_grad = false);
+	void Optimize_Cost(Tensor & COST);
 
 	~Optimizer();
 

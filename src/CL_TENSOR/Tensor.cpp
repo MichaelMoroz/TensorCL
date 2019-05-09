@@ -291,6 +291,11 @@ TensorCL& Tensor::GetTensor()
 	return VALUE_TAPE[tape_id];
 }
 
+Size Tensor::GetSize()
+{
+	return VALUE_TAPE[tape_id].GetSize();
+}
+
 int Tensor::ID()
 {
 	return tape_id;

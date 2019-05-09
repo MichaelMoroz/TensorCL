@@ -21,24 +21,28 @@ void MD_CL::LoadCluster(Cluster C)
 MD_CL::MD_CL(int TypeNum, int N1, int N2) : Types(TypeNum), NN1(N1), NN2(N2)
 {
 	//first layer
-	K.push_back(Tensor(Size(NN1, 3), 1.f, true)); //0
+	K.push_back(Tensor(Size(NN1, 3), 0.33f, true)); //0
 	K.push_back(Tensor(Size(NN1, 1), 0.01f / NN1, true)); //1
 	K.push_back(Tensor(Size(NN1, 1), 0.01f / NN1, true)); //2
-	K.push_back(Tensor(Size(NN1, 1), 0.01f, true)); //3, bias
+	K.push_back(Tensor(Size(NN1, 1), 1.f/ NN1, true)); //3, bias
 
 	//second layer
-	K.push_back(Tensor(Size(NN1, NN1), 0.1f / NN1, true)); //4
-	K.push_back(Tensor(Size(NN1, 1), 0.01f, true)); //5, bias
+	K.push_back(Tensor(Size(NN1, NN1), 0.3f / NN1, true)); //4
+	K.push_back(Tensor(Size(NN1, 1), 1.f / NN1, true)); //5, bias
 	
 	//third layer
-	K.push_back(Tensor(Size(NN2, NN1), 0.1f / NN1, true)); //6
-	K.push_back(Tensor(Size(NN2, 1), 0.0f, true)); //7, bias
+	K.push_back(Tensor(Size(NN2, NN1), 0.2f/(NN1+NN2), true)); //6
+	K.push_back(Tensor(Size(NN2, 1), 1.0f / (NN1 + NN2), true)); //7, bias
 
 	//output energy layer
-	K.push_back(Tensor(Size(1, NN2), 0.1f / NN2, true)); //8
-	K.push_back(Tensor(Size(1, 1), 0.0f, true)); //9, bias
+	K.push_back(Tensor(Size(1, NN2), 0.3f / NN2, true)); //8
 
 	InitOptimizer();
+}
+
+Tensor sinx(Tensor& X)
+{
+	return X + sin(X);
 }
 
 Tensor MD_CL::GetEnergy(int id)
@@ -49,12 +53,12 @@ Tensor MD_CL::GetEnergy(int id)
 	Tensor xyzpairs = xyz.repeat(atom_num); //cooidinates repeated N times, first dimension is X Y Z
 	
 	Tensor dist = pow(xyzpairs - transpose(xyzpairs,1,2) + transpose( repeat(diag(Tensor(atom_num, atom_num),1e10f),3) ,0,2), -1.f); //inverted distance between atom pairs
-	// +dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2))
-	Tensor X = tanh(dot(K[0], dist) + repeat(repeat(K[3], atom_num), atom_num));
-	X = sum(tanh(dot(K[4], X) + repeat(repeat(K[5], atom_num), atom_num)));
-	X = tanh(dot(K[6], X) + repeat(K[7], atom_num));
+	
+	Tensor X = sin(dot(K[0], dist) + repeat(repeat(K[3], atom_num), atom_num) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)));
+	X = sum(sin(dot(K[4], X) + repeat(repeat(K[5], atom_num), atom_num)));
+	X = sin(dot(K[6], X) + repeat(K[7], atom_num));
 
-	return sum(dot(K[8], X)) + K[9]*xyz[1];
+	return sum(dot(K[8], X)) + avg_energy;
 }
 
 float vectoravg(std::vector<float> &a)
@@ -65,6 +69,17 @@ float vectoravg(std::vector<float> &a)
 		avg += x;
 	}
 	return avg / (float)a.size();
+}
+
+float MD_CL::AvgEnergy()
+{
+	float avg = 0.f;
+	for (int i = 0; i < Energies.size(); i++)
+	{
+		Tensor E = GetEnergy(i);
+		avg += E();
+	}
+	return avg / (float)Energies.size();
 }
 
 void MD_CL::PrintEnergies()
@@ -78,41 +93,47 @@ void MD_CL::PrintEnergies()
 
 void MD_CL::DecoupleNN(int Iterations)
 {
-	float cost = 0.f;
+	float cost = 0.f, costsmooth = 0.f;
+	float avgenergy = AvgEnergy();
+	OPTIM.setSpeed(0.003f);
 	for (int it = 0; it < Iterations && isfinite(cost);)
 	{
 		int i = rand() % XYZs.size();
 		int j = rand() % XYZs.size();
 		if (i != j)
 		{
-			Tensor COST = -pow(GetEnergy(i) - GetEnergy(j), 2.f);
-			OPTIM.Optimize_Cost(COST, false);
+			Tensor E1 = GetEnergy(i);
+			Tensor E2 = GetEnergy(j);
+			Tensor COST = -pow((E1 - E2) / avgenergy, 2.f);
+			OPTIM.Optimize_Cost(COST);
+			avgenergy = avgenergy * 0.9f + (E1() + E2())*0.1f / 2.f;
 			cost = COST();
-			std::cout << "Current cost: " << cost << std::endl;
+			if (it == 0) costsmooth = cost;
+			costsmooth = costsmooth * 0.95 + cost * 0.05;
+			std::cout << "Current cost: " << costsmooth << std::endl;
 			it++;
 		}
 	}
+	OPTIM.setSpeed(1e-5f);
 }
 
 void MD_CL::TrainNN(int Iterations, int BatchSize)
 {
-	float cost = 10;
-	for (int it = 0; it < Iterations && isfinite(cost); it++)
+	float avgcost = 0;
+	avg_energy = vectoravg(Energies);
+
+	for (int it = 0; it < Iterations && isfinite(avgcost); it++)
 	{
 		Tensor COST(Size(1));
-		int sh = 0;//+ std::min(rand() % XYZs.size(), XYZs.size() - BatchSize);
+		int sh = std::min(rand() % XYZs.size(), XYZs.size() - BatchSize);
 		for (int i = sh; i < std::min(sh + BatchSize,(int)Energies.size()); i++)
 		{
 			Tensor E = GetEnergy(i);
-			std::cout << "Energy: " << i << " " << E() << " " << Energies[i] << std::endl;
 		    COST  = COST + pow(E - Energies[i],2.f);
 		}
-		std::cout << "Energy avg: " << vectoravg(Energies) << std::endl;
-		OPTIM.Optimize_Cost(COST, false);
-		cost = COST();
-		//for (auto &k : K)
-		//	PrintTensor(k);
-		std::cout << "Current cost: " << cost << ", Current tape id: " << COST.ID() << std::endl;
+		COST /= BatchSize;
+		OPTIM.Optimize_Cost(COST);
+		std::cout << "Current cost: " << (avgcost = (it==0)?COST():(avgcost * 0.95 + COST() * 0.05)) << ", Current tape id: " << COST.ID() << std::endl;
 	}
 }
 
@@ -146,8 +167,8 @@ void MD_CL::LoadClustersFromFolder(std::string folder, int rand_rot_num)
 
 void MD_CL::InitOptimizer()
 {
-	OPTIM.setMethod(Optimizer::GRAD_DESC);
-	OPTIM.setRegularization(Optimizer::L2, 0.001);
+	OPTIM.setMethod(Optimizer::ADAM);
+	//OPTIM.setRegularization(Optimizer::L2, 0.003);
 	for (auto &k : K)
 		OPTIM.AddParameter(k);
 

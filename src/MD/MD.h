@@ -17,6 +17,8 @@ public:
 
 	Tensor GetEnergy(int ClusterID);
 
+	float AvgEnergy();
+
 	void PrintEnergies();
 
 	void DecoupleNN(int Iterations);
@@ -39,6 +41,7 @@ private:
 	std::vector<float> Energies;
 
 	int NN1, NN2, Types;
+	float avg_energy;
 	std::vector<Tensor> K;
 	Optimizer OPTIM;
 };

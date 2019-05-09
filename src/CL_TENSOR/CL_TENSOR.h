@@ -133,6 +133,7 @@ public:
 	float* GetData();
 	int GetLength();
 	cl_tensor GetParam();
+	Size GetSize();
 
 	TensorCL();
 
