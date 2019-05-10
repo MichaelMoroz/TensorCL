@@ -8,8 +8,8 @@ MD_CL::MD_CL(int TypeNum, int N1, int N2) : Types(TypeNum), NN1(N1), NN2(N2)
 {
 	//first layer
 	K.push_back(Tensor(Size(NN1, 3), 0.33f, true)); //0
-	K.push_back(Tensor(Size(NN1, 1), 0.01f / NN1, true)); //1
-	K.push_back(Tensor(Size(NN1, 1), 0.01f / NN1, true)); //2
+	K.push_back(Tensor(Size(NN1, TypeNum), 0.01f / NN1, true)); //1
+	K.push_back(Tensor(Size(NN1, TypeNum), 0.01f / NN1, true)); //2
 	K.push_back(Tensor(Size(NN1, 1), 1.f/ NN1, true)); //3, bias
 
 	//second layer
@@ -34,22 +34,26 @@ Tensor sinx(Tensor& X)
 {
 	return X + sin(X);
 }
-/*
-Tensor MD_CL::GetEnergy(int id)
-{
-	Tensor xyz = XYZs[id], charge = Charges[id];
-	int atom_num = xyz[1];
-	Tensor chargepairs = transpose(charge.repeat(charge[0]), 0,2);
-	Tensor xyzpairs = xyz.repeat(atom_num); //cooidinates repeated N times, first dimension is X Y Z
-	
-	Tensor dist = pow(xyzpairs - transpose(xyzpairs,1,2) + transpose( repeat(diag(Tensor(atom_num, atom_num),1e10f),3) ,0,2), -1.f); //inverted distance between atom pairs
-	
-	Tensor X = sin(dot(K[0], dist) + repeat(repeat(K[3], atom_num), atom_num) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)));
-	X = sum(sin(dot(K[4], X) + repeat(repeat(K[5], atom_num), atom_num)));
-	X = sin(dot(K[6], X) + repeat(K[7], atom_num));
 
-	return sum(dot(K[8], X)) + avg_energy;
+Tensor MD_CL::GetEnergy(Tensor XYZ, Tensor TYPE)
+{
+	int atom_num = XYZ[1]; int cluster_num = XYZ[2];
+	Tensor chargepairs = transpose(TYPE.repeat(atom_num), 2, 3);
+
+	//cooidinates repeated N times, first dimension is X Y Z
+	Tensor xyzpairs = transpose(XYZ.repeat(atom_num), 2, 3); 
+	
+	Tensor diagonal = repeat( transpose(repeat(diag(Tensor(atom_num, atom_num), 1e10f), 3), 0, 2) , cluster_num);
+	//inverted distance between atom pairs
+	Tensor dist = pow(xyzpairs - transpose(xyzpairs,1,2) + diagonal, -1.f); 
+	
+	Tensor X = sin(dot(K[0], dist) + repeat(multirepeat(K[3], atom_num, 2), cluster_num) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)));
+	X = sum(transpose(sin(dot(K[4], X) + repeat(multirepeat(K[5], atom_num, 2), cluster_num) ), 2,3));
+	X = sin(dot(K[6], X) + repeat(repeat(K[7], atom_num), cluster_num));
+
+	return sum(transpose(dot(K[8], X),1,2)) + atom_num*avg_energy;
 }
+
 
 float vectoravg(std::vector<float> &a)
 {
@@ -61,54 +65,47 @@ float vectoravg(std::vector<float> &a)
 	return avg / (float)a.size();
 }
 
-float MD_CL::AvgEnergy()
-{
-	float avg = 0.f;
-	for (int i = 0; i < Energies.size(); i++)
-	{
-		Tensor E = GetEnergy(i);
-		avg += E();
-	}
-	return avg / (float)Energies.size();
-}
-
 void MD_CL::PrintEnergies()
 {
-	for (int i = 0; i < Energies.size(); i++)
+	for (int i = 0; i < atom_nums.size(); i++)
 	{
-		Tensor E = GetEnergy(i);
-		std::cout << "Energy: " << i << " " << E() << " " << Energies[i] << std::endl;
+		Tensor E = GetEnergy(ClustersXYZ[atom_nums[i]], ClustersTypes[atom_nums[i]]);
+		PrintTensor(E);
+		PrintTensor(ClustersEnergies[atom_nums[i]]);
 	}
 }
 
 void MD_CL::TrainNN(int Iterations, int BatchSize)
 {
-	float avgcost = 0;
-	avg_energy = vectoravg(Energies);
+	//create the training batches
+	std::vector<Tensor> BATCHES_XYZ, BATCHES_TYPES, BATCHES_ENERGIES;
 
+	for (int i = 0; i < atom_nums.size(); i++)
+	{
+		int clusters = ClustersXYZ[atom_nums[i]][2];
+		int cur_batchnum = clusters / BatchSize;
+		for (int j = 0; j < cur_batchnum-1; j++)
+		{
+			BATCHES_XYZ.push_back(ClustersXYZ[atom_nums[i]].cut(j*BatchSize, (j + 1)*BatchSize));
+			BATCHES_TYPES.push_back(ClustersTypes[atom_nums[i]].cut(j*BatchSize, (j + 1)*BatchSize));
+			BATCHES_ENERGIES.push_back(transpose(ClustersEnergies[atom_nums[i]].cut(j*BatchSize, (j + 1)*BatchSize)));
+		}
+	}
+
+	float avgcost = 0;
+	int epoch = 0;
 	for (int it = 0; it < Iterations && isfinite(avgcost); it++)
 	{
-		Tensor COST(Size(1));
-		int sh = std::min(rand() % XYZs.size(), XYZs.size() - BatchSize);
-		for (int i = sh; i < std::min(sh + BatchSize,(int)Energies.size()); i++)
-		{
-			Tensor E = GetEnergy(i);
-		    COST  = COST + pow(E - Energies[i],2.f);
-		}
-		COST /= BatchSize;
-		OPTIM.Optimize_Cost(COST);
-		std::cout << "Current cost: " << (avgcost = (it==0)?COST():(avgcost * 0.95 + COST() * 0.05)) << ", Current tape id: " << COST.ID() << std::endl;
-	}
-}
-*/
-bool list_has_element(std::list<int>& L, int E)
-{
-	return std::count(L.begin(), L.end(), E)>0;
-}
+		int batch = rand() % BATCHES_XYZ.size();
 
-int find_element(std::list<int>& L, int E)
-{
-	return std::distance(L.begin(), std::find(L.begin(), L.end(), E));
+		Tensor E = GetEnergy(BATCHES_XYZ[batch], BATCHES_TYPES[batch]);
+	    Tensor COST = pow(E - BATCHES_ENERGIES[batch],2.f)/ BatchSize;
+
+		OPTIM.Optimize_Cost(COST);
+		float cur_cost = sum(COST)();
+		if (it%BATCHES_XYZ.size()==0) epoch++;
+		std::cout <<"Epoch: "<< epoch << ", Current cost: " << (avgcost = (it==0)? cur_cost :(avgcost * 0.95 + cur_cost * 0.05)) << ", Current tape id: " << COST.ID() << std::endl;
+	}
 }
 
 void MD_CL::LoadClusterFromFile(std::string xyzfile, float max_bindenergy)
@@ -146,6 +143,7 @@ void MD_CL::LoadClustersFromFolder(std::string folder, float max_bindenergy)
 
 void MD_CL::LoadClustersToHostArrays(int random_rot_num)
 {
+	SortTypes();
 	for (int i = 0; i < all_clusters.size()*random_rot_num; i++)
 	{
 		int id = (rand() % all_clusters.size());
@@ -175,13 +173,14 @@ void MD_CL::LoadClustersToHostArrays(int random_rot_num)
 
 void MD_CL::LoadHostToGPU()
 {
-	for (auto it = hostClustersXYZ.begin(), it2 = hostClustersTypes.begin(); it != hostClustersXYZ.end(); it++, it2++)
+	avg_energy = 0;
+	for (auto it = hostClustersXYZ.begin(); it != hostClustersXYZ.end(); it++)
 	{
 		TensorData xyz(3, it->first, it->second.size());
 		TensorData id(2, it->first, it->second.size());
 		TensorData E(it->second.size());
 		xyz.LoadData(it->second);
-		id.LoadData(it2->second);
+		id.LoadData(hostClustersTypes[it->first]);
 		E.LoadData(hostClustersEnergies[it->first]);
 
 		atom_nums.push_back(it->first);
@@ -189,7 +188,10 @@ void MD_CL::LoadHostToGPU()
 		ClustersXYZ[it->first] = Tensor(xyz);
 		ClustersTypes[it->first] = Tensor(id);
 		ClustersEnergies[it->first] = Tensor(E);
+
+		avg_energy += vectoravg(hostClustersEnergies[it->first])/(float) it->first;
 	}
+	avg_energy /= (float)hostClustersXYZ.size();
 }
 
 void MD_CL::InitOptimizer()

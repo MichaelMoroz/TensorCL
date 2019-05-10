@@ -16,7 +16,7 @@ public:
 	MD_CL(int TypeNum, int N1, int N2);
 	MD_CL(std::string filename);
 
-	Tensor GetEnergy(int ClusterID);
+	Tensor GetEnergy(Tensor XYZ, Tensor TYPE);
 
 	float AvgEnergy();
 

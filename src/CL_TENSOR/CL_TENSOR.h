@@ -189,6 +189,7 @@ template<typename T> T max(float y, T& X);
 template<typename T> T dot(T& X, T& Y);
 template<typename T> T indicies(T& X, int dim = 0);
 template<typename T> T repeat(T& X, int n = 1);
+template<typename T> T multirepeat(T& X, int n = 1, int m = 1);
 template<typename T> T transpose(T& X, int dim_a = 0, int dim_b = 1);
 template<typename T> T cut(T& X, int from, int to);
 
@@ -351,6 +352,17 @@ template<typename T>
 inline T repeat(T & X, int n)
 {
 	return X.repeat(n);
+}
+
+template<typename T>
+inline T multirepeat(T & X, int n, int m)
+{
+	T Y = X;
+	for (int i = 0; i < m; i++)
+	{
+		Y = Y.repeat(n);
+	}
+	return Y;
 }
 
 template<typename T>

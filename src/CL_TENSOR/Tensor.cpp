@@ -6,11 +6,11 @@
 int idt = 0;
 
 #define DEBUG false
-#define DEBUG_PRINT_VALUE false
-#define DEBUG_PRINT_ARGS true
+#define DEBUG_PRINT_VALUE true
+#define DEBUG_PRINT_ARGS false
 
 #define DEBUG_VJP false
-#define DEBUG_PRINT_TAPE true
+#define DEBUG_PRINT_TAPE false
 
 std::string getOperationName(Tensor::OPERATION op)
 {

@@ -962,16 +962,19 @@ TensorData::TensorData(int x, int y, int z, int w)
 
 void TensorData::LoadData(std::vector< std::vector< std::vector<float> > > A)
 {
-	if (A.size() == param.size[2] && A[0].size() == param.size[1] && A[0][0].size() == param.size[0])
+	if (A[0][0].size() == param.size[0] && A[0].size() == param.size[1] && A.size() == param.size[2])
 	{
+		int pos = 0;
 		for (auto i = 0; i < A.size(); i++)
 		{
 			for (auto j = 0; j < A[i].size(); j++)
 			{
-				std::copy(A[i][j].begin(), A[i][j].end(), data.get() + A[i].size()*i + A[i][j].size()*j);
+				std::copy(A[i][j].begin(), A[i][j].end(), data.get()+pos);
+				pos += A[i][j].size();
 			}
 		}
 	}
+	else
 	{
 		ERROR_MSG("Invalid data size");
 	}
