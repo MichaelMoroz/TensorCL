@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
 		ZnO.PrintEnergies();
 		ZnO.TrainNN(1500, 128);
 		ZnO.PrintEnergies();
+		ZnO.SaveNNToFile("C:/ZnONetworks/ver1.nn");
 
 
 	/*	Optimizer OPTIM(Optimizer::ADAM);

@@ -31,6 +31,8 @@ public:
 	void MD_Simulation(int cluster_id, float dt);
 
 	void LoadNNFromFile(std::string filename);
+	void SaveNNToFile(std::string filename);
+
 	void LoadClusterFromFile(std::string xyzfile, float max_bindenergy = 1000.f);
 	void SortTypes();
 	void LoadClustersFromFolder(std::string folder, float max_bindenergy = 1000.f);

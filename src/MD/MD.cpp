@@ -66,8 +66,7 @@ void MD_CL::PrintEnergies()
 	for (int i = 0; i < atom_nums.size(); i++)
 	{
 		Tensor E = GetEnergy(ClustersXYZ[atom_nums[i]], ClustersTypes[atom_nums[i]]);
-		PrintTensor(E);
-		PrintTensor(ClustersEnergies[atom_nums[i]]);
+		PrintTensor( E - transpose(ClustersEnergies[atom_nums[i]]) );
 	}
 }
 
@@ -102,6 +101,26 @@ void MD_CL::TrainNN(int Iterations, int BatchSize)
 		if (it%BATCHES_XYZ.size()==0) epoch++;
 		std::cout <<"Epoch: "<< epoch << ", Current cost: " << sqrt((avgcost = (it==0)? cur_cost :(avgcost * 0.95 + cur_cost * 0.05))) << ", Current tape id: " << COST.ID() << std::endl;
 	}
+}
+
+void MD_CL::LoadNNFromFile(std::string filename)
+{
+	std::ifstream file(filename, std::ios::binary);
+
+	while (!file.eof())
+	{
+		K.push_back(Tensor(TensorCL(file)));
+	}
+	
+	file.close();
+}
+
+void MD_CL::SaveNNToFile(std::string filename)
+{
+	std::ofstream file(filename, std::ios::binary || std::ios::trunc);
+	for (auto &k : K)
+		k.GetTensor().SaveToFstream(file);
+	file.close();
 }
 
 void MD_CL::LoadClusterFromFile(std::string xyzfile, float max_bindenergy)

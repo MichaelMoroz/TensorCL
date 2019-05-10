@@ -95,10 +95,16 @@ TensorCL::TensorCL(int x, int y, int z, int w)
 	init_data();
 }
 
-TensorCL::TensorCL(cl_tensor p): param(p)
+TensorCL::TensorCL(std::ifstream &file)
+{
+	LoadFromFstream(file);
+}
+
+TensorCL::TensorCL(cl_tensor p) : param(p)
 {
 	init_data();
 }
+
 
 TensorCL& TensorCL::operator=(float a)
 {
@@ -543,6 +549,24 @@ float TensorCL::operator()(int i, int j, int k, int m)
 	return value;
 }
 
+void TensorCL::LoadFromFstream(std::ifstream &file)
+{
+	cl_tensor header;
+	file.read((char*)&header, sizeof(cl_tensor));
+	TensorData D(header);
+	file.read((char*)D.GetData(), header.length*sizeof(float));
+	param = header;
+	init_data(0.f);
+	clEnqueueWriteBuffer(CL->queue(), data, CL_TRUE, 0, sizeof(float)*param.length, D.GetData(), NULL, NULL, NULL);
+}
+
+void TensorCL::SaveToFstream(std::ofstream &file)
+{
+	file.write((char*)&param, sizeof(cl_tensor));
+
+	file.write((char*)GetData(), param.length * sizeof(float));
+}
+
 int TensorCL::GetLength()
 {
 	return param.length;
@@ -958,6 +982,13 @@ TensorData::TensorData(int x, int y, int z, int w)
 
 	data.reset(new float[param.length]);
 	std::fill(data.get(), data.get() + param.length, 0.f);
+}
+
+TensorData::TensorData(cl_tensor P) 
+{
+	param = P;
+	data.reset(new float[param.length]);
+	std::fill(data.get(), data.get() + param.length, 0.f); 
 }
 
 void TensorData::LoadData(std::vector< std::vector< std::vector<float> > > A)

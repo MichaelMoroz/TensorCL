@@ -40,6 +40,7 @@ class TensorData
 {
 public:
 	TensorData(int a = 1, int b = 1, int c = 1, int d = 1);
+	TensorData(cl_tensor P);
 
 	void LoadData(std::vector< std::vector< std::vector<float> > > A);
 	void LoadData(std::vector< std::vector<float> > B);
@@ -67,6 +68,7 @@ public:
 	TensorCL(int r, std::vector<int> s); 
 	TensorCL(int x, int y, int z = 1, int w = 1); 
 	TensorCL(cl_tensor p);
+	TensorCL(std::ifstream &file);
 
 	TensorCL(const TensorCL & X);
 	TensorCL(TensorCL & X, float fill);
@@ -138,6 +140,9 @@ public:
 	int GetLength();
 	cl_tensor GetParam();
 	Size GetSize();
+
+	void LoadFromFstream(std::ifstream &file);
+	void SaveToFstream(std::ofstream &file);
 
 	TensorCL();
 
