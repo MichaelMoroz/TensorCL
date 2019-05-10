@@ -5,19 +5,19 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	srand(time(NULL));
 
-	OpenCL cl("OpenCL/main.c", false, 1);
+	OpenCL cl("OpenCL/main.c", false, 0);
 
 	if (!cl.failed)
 	{
 		TensorUseOpenCL(&cl);
 		
-		MD_CL ZnO(2, 16, 16);
-		ZnO.LoadClustersFromFolder("E:/ZnOTest", 600.f);
-		ZnO.LoadClustersToHostArrays(5);
+		MD_CL ZnO(2, 32, 32);
+		ZnO.LoadClustersFromFolder("D:/ZnO", 400.f);
+		ZnO.LoadClustersToHostArrays(1);
 		ZnO.LoadHostToGPU();
 		ZnO.PrintEnergies();
-		ZnO.TrainNN(3000, 10);
-		//ZnO.PrintEnergies();
+		ZnO.TrainNN(1500, 128);
+		ZnO.PrintEnergies();
 
 
 	/*	Optimizer OPTIM(Optimizer::ADAM);

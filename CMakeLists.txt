@@ -69,9 +69,9 @@ target_link_libraries(NeuralNetworkCL
   sfml-window
   sfml-graphics
   ${ANTTWEAKBAR_DIR}/lib/AntTweakBar.lib
-  ${GLCL_DIR}/lib/x86/OpenCL.lib
-  ${GLCL_DIR}/lib/x86/glew32.lib
-  ${GLCL_DIR}/lib/x86/glut32.lib
+  ${GLCL_DIR}/lib/x86_64/OpenCL.lib
+  ${GLCL_DIR}/lib/x86_64/glew64.lib
+  ${GLCL_DIR}/lib/x86_64/glut64.lib
   winmm
   gdi32
 )
