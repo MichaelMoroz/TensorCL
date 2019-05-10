@@ -12,11 +12,16 @@ int main(int argc, char *argv[]) {
 		TensorUseOpenCL(&cl);
 		
 		MD_CL ZnO(2, 16, 16);
-		ZnO.LoadClustersFromFolder("E:/ZnOTest", 1);
+		//ZnO.LoadClustersFromFolder("E:/ZnOTest", 1);
 		//ZnO.DecoupleNN(100);
-		ZnO.PrintEnergies();
-		ZnO.TrainNN(3000, 10);
-		ZnO.PrintEnergies();
+		//ZnO.PrintEnergies();
+		//ZnO.TrainNN(3000, 10);
+		//ZnO.PrintEnergies();
+
+		Tensor A(Size(4, 4, 4), 1.f, true);
+		PrintTensor(A);
+		PrintTensor(cut(A,3,3));
+
 	/*	Optimizer OPTIM(Optimizer::ADAM);
 		vector<Tensor> K;
 		K.push_back(Tensor(Size(32, 1), 1.f/32.f, true));

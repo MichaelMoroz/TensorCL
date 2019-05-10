@@ -32,7 +32,8 @@ cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 int getrank(cl_tensor x);
 cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b);
 cl_tensor GetSumTensor(cl_tensor x);
-cl_tensor Repeat(cl_tensor x, int n); 
+cl_tensor Repeat(cl_tensor x, int n);
+cl_tensor Cut(cl_tensor x, int a, int b);
 void TensorUseOpenCL(OpenCL* cl);
 
 class TensorData
@@ -123,9 +124,12 @@ public:
 
 	TensorCL _if (TensorCL & _true, TensorCL & _false);
 	TensorCL indicies(int dim);
-	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
 	TensorCL transpose(int dim_a = 0, int dim_b = 1);
 	TensorCL repeat(int n);
+	TensorCL cut(int from, int to); //cut a subset of the tensor on the last index from -> to
+	TensorCL expand(int from, int to);
+
+	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
 
 	TensorCL dot(TensorCL &X); //dot product, last dimension of this and second to last dimension of X
 	
@@ -186,6 +190,7 @@ template<typename T> T dot(T& X, T& Y);
 template<typename T> T indicies(T& X, int dim = 0);
 template<typename T> T repeat(T& X, int n = 1);
 template<typename T> T transpose(T& X, int dim_a = 0, int dim_b = 1);
+template<typename T> T cut(T& X, int from, int to);
 
 template<typename T> T _if(T& _cond, T& _true, T& _false);
 template<typename T> T _if(T& _cond, T& _true, float _false);
@@ -352,6 +357,12 @@ template<typename T>
 inline T transpose(T & X, int dim_a, int dim_b)
 {
 	return X.transpose(dim_a, dim_b);
+}
+
+template<typename T>
+inline T cut(T & X, int from, int to)
+{
+	return X.cut(from,to);
 }
 
 template<typename T>

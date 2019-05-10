@@ -275,6 +275,11 @@ Tensor Tensor::repeat(int n)
 	return Tensor(VALUE_TAPE[this->tape_id].repeat(n), std::pair<int, int>(this->tape_id, -1), REPEAT);
 }
 
+Tensor Tensor::cut(int from, int to)
+{
+	return Tensor(VALUE_TAPE[this->tape_id].cut(from,to), std::pair<int, int>(this->tape_id, -1), CUT);
+}
+
 Tensor Tensor::_if(Tensor & _true, float _false)
 {
 	FLOAT_TAPE[idt] = _false;

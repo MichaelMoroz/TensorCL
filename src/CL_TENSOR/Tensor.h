@@ -15,7 +15,7 @@ public:
 		SIN, COS, TAN, EXP, LOG, TANH, POW,
 		SUM, MIN_M, MAX_M, MIN_N, MAX_N,
 		MORE_M, LESS_M, MORE_N, LESS_N,
-		TRANSPOSE, DOT, REPEAT, GET_INDEX, IF_COND
+		TRANSPOSE, DOT, REPEAT, GET_INDEX, IF_COND, CUT, EXPAND
 	};
 
 	Tensor();
@@ -80,6 +80,7 @@ public:
 	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
 	Tensor transpose(int dim_a = 0, int dim_b = 1);
 	Tensor repeat(int n = 1);
+	Tensor cut(int from, int to);
 
 	Tensor _if(Tensor & _true, float _false);
 

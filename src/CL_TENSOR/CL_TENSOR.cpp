@@ -6,7 +6,7 @@ CLFunction more_m, less_m;
 CLFunction more_n, less_n, if_cond;
 CLFunction idx, sinfun, cosfun, tanfun, tanhfun, powfun, maxfun, minfun, maxfun_f, minfun_f;
 CLFunction expfun, logfun, transposefun, repeatfun;
-CLFunction sumfun, randfun, diagfun;
+CLFunction sumfun, randfun, diagfun, cutfun;
 
 TensorCL::TensorCL()
 {
@@ -613,6 +613,16 @@ cl_tensor Repeat(cl_tensor x, int n)
 	return x;
 }
 
+cl_tensor Cut(cl_tensor x, int a, int b)
+{
+	x.rank = getrank(x);
+	x.length = x.length / x.size[x.rank - 1];
+	x.size[x.rank - 1] = b - a + 1;//if cut from a to a then size = 1
+	x.length = x.length * x.size[x.rank - 1];
+	x.rank = getrank(x);
+	return x;
+}
+
 void TensorUseOpenCL(OpenCL *cl)
 {
 	CL = cl;
@@ -642,6 +652,7 @@ void TensorUseOpenCL(OpenCL *cl)
 	powfun.Initialize("tensor_pow", CL); 
 	randfun.Initialize("tensor_random", CL);
 	diagfun.Initialize("tensor_diag", CL);
+	cutfun.Initialize("tensor_cut", CL);
 }
 
 inline std::ostream& red(std::ostream &s)
@@ -840,6 +851,20 @@ TensorCL TensorCL::repeat(int n)
 	repeatfun.SetArg(3, GetParam());
 	repeatfun.SetArg(4, n);
 	repeatfun.RFlush();
+	return C;
+}
+
+TensorCL TensorCL::cut(int from, int to)
+{
+	TensorCL C(Cut(GetParam(),from,to)); //create a temporary array
+	cutfun.SetRange(CL->group_size[0], 1, C.GetLength(), 1);
+	cutfun.SetArg(0, C.data); //result
+	cutfun.SetArg(1, data);
+	cutfun.SetArg(2, C.GetParam());
+	cutfun.SetArg(3, GetParam());
+	cutfun.SetArg(4, from);
+	cutfun.SetArg(5, to);
+	cutfun.RFlush();
 	return C;
 }
 

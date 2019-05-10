@@ -285,6 +285,25 @@ __kernel void tensor_transpose(__global float* C,
 	}
 }
 
+__kernel void tensor_cut(__global float* C,
+	const __global float* A,
+	const cl_tensor Cdata,
+	const cl_tensor Adata,
+	const int from,
+	const int to )
+{
+	const int i = get_global_id(0);
+	if (i < Cdata.length)
+	{
+		cl_index idx = get_index(i, Cdata);
+		idx.index[Adata.rank-1] += from; 
+		int id = ID(idx, Adata);
+		if(id < Adata.length)
+			C[i] = A[id];
+	}
+}
+
+
 __kernel void tensor_diag(__global float* C,
 	const cl_tensor Cdata,
 	const float x,
