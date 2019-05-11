@@ -259,11 +259,6 @@ Tensor Tensor::indicies(int dim)
 	return C;
 }
 
-void Tensor::reshape(int x, int y, int z, int w)
-{
-	//TODO
-}
-
 Tensor Tensor::transpose(int dim_a, int dim_b)
 {
 	TRANSPOSE_TAPE[idt] = std::pair<int,int>(dim_a,dim_b);
@@ -294,6 +289,11 @@ Tensor Tensor::dot(Tensor & X)
 TensorCL& Tensor::GetTensor()
 {
 	return VALUE_TAPE[tape_id];
+}
+
+cl_tensor Tensor::GetParam()
+{
+	return VALUE_TAPE[tape_id].GetParam();
 }
 
 Size Tensor::GetSize()
@@ -574,6 +574,16 @@ int TAPE_SIZE()
 	return VALUE_TAPE.size();
 }
 
+Tensor reshape(Tensor X, int x, int y, int z, int w)
+{
+	return Tensor(reshape(VALUE_TAPE[X.ID()], x, y, z, w), std::pair<int, int>(X.ID(), -1), Tensor::RESHAPE);
+}
+
+Tensor reshape(Tensor X, cl_tensor x)
+{
+	return Tensor(reshape(VALUE_TAPE[X.ID()], x), std::pair<int, int>(X.ID(), -1), Tensor::RESHAPE);
+}
+
 void PrintTAPE(bool disp_value)
 {
 	std::cout << "TAPE:" << std::endl;
@@ -700,12 +710,12 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 		AddDerivative(id_b, -Tensor(outgrad_id));
 		break;
 	case Tensor::MUL_T:
-		AddDerivative(id_a, Tensor(outgrad_id)*Tensor(id_b));
-		AddDerivative(id_b, Tensor(outgrad_id)*Tensor(id_a));
+		AddDerivative(id_a, Tensor(outgrad_id)*P2);
+		AddDerivative(id_b, Tensor(outgrad_id)*P1);
 		break;
 	case Tensor::DIV_T:
-		AddDerivative(id_a, Tensor(outgrad_id) / Tensor(id_b));
-		AddDerivative(id_b, -Tensor(outgrad_id)*Tensor(id_a)*pow(Tensor(id_b),-2.f));
+		AddDerivative(id_a, Tensor(outgrad_id) / P2);
+		AddDerivative(id_b, -Tensor(outgrad_id)*P1*pow(P2,-2.f));
 		break;
 	case Tensor::NEG:
 		AddDerivative(id_a, -Tensor(outgrad_id));
@@ -727,23 +737,23 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 		AddDerivative(id_a, Tensor(outgrad_id) / num);
 		break;
 	case Tensor::SIN:
-		AddDerivative(id_a, cos(Tensor(id_a))*Tensor(outgrad_id));
+		AddDerivative(id_a, cos(P1)*Tensor(outgrad_id));
 		break;
 	case Tensor::COS:
-		AddDerivative(id_a, -sin(Tensor(id_a))*Tensor(outgrad_id));
+		AddDerivative(id_a, -sin(P1)*Tensor(outgrad_id));
 		break;
 	case Tensor::TAN:
-		AddDerivative(id_a, Tensor(outgrad_id) * pow(cos(Tensor(id_a)), -2.f) );
+		AddDerivative(id_a, Tensor(outgrad_id) * pow(cos(P1), -2.f) );
 		break;
 	case Tensor::LOG:
-		AddDerivative(id_a, Tensor(outgrad_id) / Tensor(id_a));
+		AddDerivative(id_a, Tensor(outgrad_id) / P1);
 		break;
 	case Tensor::TANH:
 		AddDerivative(id_a, Tensor(outgrad_id) * (1 - pow(Tensor(out_id), 2)));
 		break;
 	case Tensor::POW:
 		num = FLOAT_TAPE[out_id];
-		AddDerivative(id_a, Tensor(outgrad_id) * pow(Tensor(id_a), num - 1.f) * num);
+		AddDerivative(id_a, Tensor(outgrad_id) * pow(P1, num - 1.f) * num);
 		break;
 	case Tensor::EXP:
 		AddDerivative(id_a, Tensor(outgrad_id) * Tensor(out_id));
@@ -754,20 +764,20 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 		AddDerivative(id_a, repeat(Tensor(outgrad_id), N));
 		break;
 	case Tensor::MIN_M:
-		AddDerivative(id_a, _if(Tensor(id_a) < Tensor(id_b), Tensor(outgrad_id), 0.f));
-		AddDerivative(id_b, _if(Tensor(id_a) > Tensor(id_b), Tensor(outgrad_id), 0.f));
+		AddDerivative(id_a, _if(P1 < P2, Tensor(outgrad_id), 0.f));
+		AddDerivative(id_b, _if(P1 > P2, Tensor(outgrad_id), 0.f));
 		break;
 	case Tensor::MAX_M:
-		AddDerivative(id_a, _if(Tensor(id_a) > Tensor(id_b), Tensor(outgrad_id), 0.f));
-		AddDerivative(id_b, _if(Tensor(id_a) < Tensor(id_b), Tensor(outgrad_id), 0.f));
+		AddDerivative(id_a, _if(P1 > P2, Tensor(outgrad_id), 0.f));
+		AddDerivative(id_b, _if(P1 < P2, Tensor(outgrad_id), 0.f));
 		break;
 	case Tensor::MIN_N:
 		num = FLOAT_TAPE[out_id];
-		AddDerivative(id_a, _if(Tensor(id_a) < num, Tensor(outgrad_id), 0.f));
+		AddDerivative(id_a, _if(P1 < num, Tensor(outgrad_id), 0.f));
 		break;
 	case Tensor::MAX_N:
 		num = FLOAT_TAPE[out_id];
-		AddDerivative(id_a, _if(Tensor(id_a) > num, Tensor(outgrad_id), 0.f));
+		AddDerivative(id_a, _if(P1 > num, Tensor(outgrad_id), 0.f));
 		break;
 	case Tensor::TRANSPOSE:
 		dim_a = TRANSPOSE_TAPE[out_id].first;
@@ -799,8 +809,11 @@ void Gradient::VJP(int outgrad_id, int out_id, Tensor::OPERATION op)
 		N = VALUE_TAPE[outgrad_id].GetParam().size[rnk - 1];
 		AddDerivative(id_a, sum(Tensor(outgrad_id)));
 		break;
+	case Tensor::RESHAPE:
+		AddDerivative(id_a, reshape(Tensor(outgrad_id), P1.GetParam()) );
+		break;
 	case Tensor::IF_COND:
-		AddDerivative(id_b, _if(Tensor(id_a), Tensor(outgrad_id), 0.f));
+		AddDerivative(id_b, _if(P1, Tensor(outgrad_id), 0.f));
 		break;
 	default:
 		break;
