@@ -30,6 +30,16 @@ int ID(cl_index indx, cl_tensor info)
 	return id;
 }
 
+int GetDelta(cl_tensor info, int N)
+{
+	int sh = 1;
+	for (int i = 0; i < N; i++)
+	{
+		sh *= info.size[i];
+	}
+	return sh;
+}
+
 bool is_diag(cl_index indx, cl_tensor info)
 {
 	bool diag = true;
@@ -335,14 +345,13 @@ __kernel void tensor_sum(__global float* C,
 	const cl_tensor Adata)
 {
 	const int i = get_global_id(0);
-	cl_index id = get_index(i, Cdata);
 	float sum = 0.f;
+
+	int did = GetDelta(Adata, Adata.rank-1);
 	for (int j = 0; j < Adata.size[Adata.rank-1]; j++)
 	{
-		id.index[Adata.rank-1] = j;
-		int idx = ID(id, Adata);
-		if(idx < Adata.length)
-			sum += A[idx];
+		if(i + j*did < Adata.length)
+			sum += A[i + j*did];
 	}
 	
 	if (i < Cdata.length)

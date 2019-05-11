@@ -137,3 +137,10 @@ Optimizer::~Optimizer()
 	moment.clear();
 	second_moment.clear();
 }
+
+void Optimizer::Clear()
+{
+	OPTIM_TENSORS.clear();
+	moment.clear();
+	second_moment.clear();
+}

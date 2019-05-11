@@ -158,8 +158,6 @@ protected:
 	
 	//OpenCL stuff
 	cl_mem data;
-
-	float* host_data;
 };
 
 template<typename T> void PrintTensor(T& a);

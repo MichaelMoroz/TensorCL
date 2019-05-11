@@ -12,12 +12,11 @@ int main(int argc, char *argv[]) {
 		TensorUseOpenCL(&cl);
 		
 		MD_CL ZnO(2, 32, 32);
-		ZnO.LoadClustersFromFolder("D:/ZnO", 400.f);
+		//ZnO.LoadNNFromFile("C:/ZnONetworks/24.nn");
+		ZnO.LoadClustersFromFolder("D:/ZnO", 250.f);
 		ZnO.LoadClustersToHostArrays(1);
 		ZnO.LoadHostToGPU();
-		ZnO.PrintEnergies();
-		ZnO.TrainNN(1500, 128);
-		ZnO.PrintEnergies();
+		ZnO.TrainNN(10000, 32, 1.f); //train untill a precision of 1eV is reached
 		ZnO.SaveNNToFile("C:/ZnONetworks/ver1.nn");
 
 

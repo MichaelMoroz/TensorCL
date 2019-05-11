@@ -7,6 +7,8 @@ MD_CL::MD_CL()
 MD_CL::MD_CL(int TypeNum, int N1, int N2) : Types(TypeNum), NN1(N1), NN2(N2)
 {
 	//first layer
+	Tensor C(Size(1));//uh
+
 	K.push_back(Tensor(Size(NN1, 3), 1.f, true)); //0
 	K.push_back(Tensor(Size(NN1, TypeNum), 0.01f / NN1, true)); //1
 	K.push_back(Tensor(Size(NN1, TypeNum), 0.01f / NN1, true)); //2
@@ -17,7 +19,7 @@ MD_CL::MD_CL(int TypeNum, int N1, int N2) : Types(TypeNum), NN1(N1), NN2(N2)
 	K.push_back(Tensor(Size(NN2, 1), 1.0f / (NN1 + NN2), true)); //5, bias
 
 	//output energy layer
-	K.push_back(Tensor(Size(1, NN2), 0.3f / NN2, true)); //6
+	K.push_back(Tensor(Size(1, NN2), 100.f / NN2, true)); //6
 
 	InitOptimizer();
 }
@@ -42,10 +44,11 @@ Tensor MD_CL::GetEnergy(Tensor XYZ, Tensor TYPE)
 	
 	Tensor diagonal = repeat( transpose(repeat(diag(Tensor(atom_num, atom_num), 1e10f), 3), 0, 2) , cluster_num);
 	//inverted distance between atom pairs
-	Tensor dist = pow(xyzpairs - transpose(xyzpairs,1,2) + diagonal, -1.f); 
-	
+	Tensor dist = pow(xyzpairs - transpose(xyzpairs,1,2) + diagonal, -2.f); 
+//	PrintTAPE(false);
+//	std::cout << K[0].ID() << std::endl;
 	Tensor X = tanh(dot(K[0], dist) + repeat(multirepeat(K[3], atom_num, 2), cluster_num) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)));
-	X = sin(dot(K[4], sum(transpose(X, 2, 3))) + repeat(repeat(K[5], atom_num), cluster_num));
+	X = tanh(dot(K[4], sum(transpose(X, 2, 3))) + repeat(repeat(K[5], atom_num), cluster_num));
 
 	return sum(transpose(dot(K[6], X),1,2)) + atom_num*avg_energy;
 }
@@ -70,7 +73,7 @@ void MD_CL::PrintEnergies()
 	}
 }
 
-void MD_CL::TrainNN(int Iterations, int BatchSize)
+void MD_CL::TrainNN(int Iterations, int BatchSize, float min_cost)
 {
 	//create the training batches
 	std::vector<Tensor> BATCHES_XYZ, BATCHES_TYPES, BATCHES_ENERGIES;
@@ -87,9 +90,9 @@ void MD_CL::TrainNN(int Iterations, int BatchSize)
 		}
 	}
 
-	float avgcost = 0;
+	float avgcost = 110.f*110.f;
 	int epoch = 0;
-	for (int it = 0; it < Iterations && isfinite(avgcost); it++)
+	for (int it = 0; it < Iterations && isfinite(avgcost) && avgcost > min_cost; it++)
 	{
 		int batch = rand() % BATCHES_XYZ.size();
 
@@ -99,12 +102,14 @@ void MD_CL::TrainNN(int Iterations, int BatchSize)
 		OPTIM.Optimize_Cost(COST);
 		float cur_cost = sum(COST)();
 		if (it%BATCHES_XYZ.size()==0) epoch++;
-		std::cout <<"Epoch: "<< epoch << ", Current cost: " << sqrt((avgcost = (it==0)? cur_cost :(avgcost * 0.95 + cur_cost * 0.05))) << ", Current tape id: " << COST.ID() << std::endl;
+		std::cout <<"Epoch: "<< epoch << ", Current cost: " << sqrt((avgcost = (it==0)? cur_cost :(avgcost * 0.95 + cur_cost * 0.05))) << ", Current tape size: " << TAPE_SIZE() << std::endl;
 	}
 }
 
 void MD_CL::LoadNNFromFile(std::string filename)
 {
+	OPTIM.Clear();
+	K.clear();
 	std::ifstream file(filename, std::ios::binary);
 
 	while (!file.eof())
@@ -113,14 +118,21 @@ void MD_CL::LoadNNFromFile(std::string filename)
 	}
 	
 	file.close();
+	InitOptimizer();
 }
 
 void MD_CL::SaveNNToFile(std::string filename)
 {
-	std::ofstream file(filename, std::ios::binary || std::ios::trunc);
+	std::ofstream file(filename, std::ios::out | std::ios::binary | std::ios::trunc);
 	for (auto &k : K)
 		k.GetTensor().SaveToFstream(file);
 	file.close();
+}
+
+void MD_CL::PrintCoefficients()
+{
+	for (auto &k : K)
+		PrintTensor(k);
 }
 
 void MD_CL::LoadClusterFromFile(std::string xyzfile, float max_bindenergy)
@@ -212,9 +224,9 @@ void MD_CL::LoadHostToGPU()
 void MD_CL::InitOptimizer()
 {
 	OPTIM.setMethod(Optimizer::ADAM);
-	OPTIM.setRegularization(Optimizer::L2, 0.00005);
+	//OPTIM.setRegularization(Optimizer::L2, 0.005);
 	for (auto &k : K)
 		OPTIM.AddParameter(k);
 
-	OPTIM.setSpeed(0.0023);
+	OPTIM.setSpeed(0.002);
 }

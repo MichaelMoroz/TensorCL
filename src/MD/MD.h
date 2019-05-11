@@ -24,7 +24,7 @@ public:
 
 	void DecoupleNN(int Iterations);
 
-	void TrainNN(int Iterations, int BatchSize);
+	void TrainNN(int Iterations, int BatchSize, float min_cost);
 
 	void OptimizeCluster(int cluster_id);
 	void ES_Optimization(int cluster_id);
@@ -32,6 +32,8 @@ public:
 
 	void LoadNNFromFile(std::string filename);
 	void SaveNNToFile(std::string filename);
+
+	void PrintCoefficients();
 
 	void LoadClusterFromFile(std::string xyzfile, float max_bindenergy = 1000.f);
 	void SortTypes();

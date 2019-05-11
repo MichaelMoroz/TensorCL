@@ -8,17 +8,24 @@ CLFunction idx, sinfun, cosfun, tanfun, tanhfun, powfun, maxfun, minfun, maxfun_
 CLFunction expfun, logfun, transposefun, repeatfun;
 CLFunction sumfun, randfun, diagfun, cutfun;
 
+std::string GetTensorSizeString(cl_tensor x)
+{
+	std::string info = "(";
+	for (int i = 0; i < x.rank; i++)
+	{
+		info = info + num_to_str(x.size[i]) + ((i!=x.rank-1)?",":"");
+	}
+	info = info + ")";
+	return info;
+}
+
 TensorCL::TensorCL()
 {
-	host_data = NULL;
 	data = NULL;
 }
 
 void TensorCL::release()
 {
-	if(host_data != NULL)
-		delete[] host_data;
-
 	if (data != NULL)
 		clReleaseMemObject(data);
 }
@@ -48,7 +55,6 @@ void TensorCL::init_data(float value)
 	{
 		clEnqueueFillBuffer(CL->queue(), data, &value, sizeof(value), 0, param.length * sizeof(float), 0, 0, 0);
 	}
-	host_data = NULL;
 }
 
 TensorCL::TensorCL(Size s, float fill, bool rand)
@@ -116,10 +122,8 @@ TensorCL& TensorCL::operator=(float a)
 TensorCL::TensorCL(TensorCL && p)
 {
 	std::swap(this->data, p.data);
-	std::swap(this->host_data, p.host_data);
 	std::swap(this->param, p.param);
 	p.data = NULL;
-	p.host_data = NULL;
 }
 
 TensorCL::TensorCL(TensorData & D)
@@ -133,10 +137,8 @@ TensorCL & TensorCL::operator=(TensorCL && p)
 {
 	release();
 	std::swap(this->data, p.data);
-	std::swap(this->host_data, p.host_data);
 	std::swap(this->param, p.param);
 	p.data = NULL;
-	p.host_data = NULL;
 	return *this;
 }
 
@@ -223,7 +225,7 @@ TensorCL TensorCL::operator+(TensorCL & X)
 	}
 	else
 	{
-		ERROR_MSG("Incompatible tensors");
+		ERROR_MSG(("ADD: Incompatible tensors, A = " + GetTensorSizeString(GetParam()) + ", B = " + GetTensorSizeString(X.GetParam())).c_str());
 	}
 	return *this;
 }
@@ -246,7 +248,7 @@ TensorCL TensorCL::operator-(TensorCL & X)
 	}
 	else
 	{
-		ERROR_MSG("Incompatible tensors");
+		ERROR_MSG(("SUBS: Incompatible tensors, A = " + GetTensorSizeString(GetParam()) + ", B = " + GetTensorSizeString(X.GetParam())).c_str());
 	}
 	return *this;
 }
@@ -269,7 +271,7 @@ TensorCL TensorCL::operator*(TensorCL & X)
 	}
 	else
 	{
-		ERROR_MSG("Incompatible tensors");
+		ERROR_MSG(("MUL: Incompatible tensors, A = " + GetTensorSizeString(GetParam()) + ", B = " + GetTensorSizeString(X.GetParam())).c_str());
 	}
 	return *this;
 }
@@ -292,7 +294,7 @@ TensorCL TensorCL::operator/(TensorCL & X)
 	}
 	else
 	{
-		ERROR_MSG("Incompatible tensors");
+		ERROR_MSG(("DIV: Incompatible tensors, A = " + GetTensorSizeString(GetParam()) + ", B = " + GetTensorSizeString(X.GetParam())).c_str());
 	}
 	return *this;
 }
@@ -312,7 +314,7 @@ TensorCL TensorCL::operator>(TensorCL & X)
 	}
 	else
 	{
-		ERROR_MSG("Incompatible tensors");
+		ERROR_MSG(("MORE: Incompatible tensors, A = " + GetTensorSizeString(GetParam()) + ", B = " + GetTensorSizeString(X.GetParam())).c_str());
 	}
 	return *this;
 }
@@ -332,7 +334,7 @@ TensorCL TensorCL::operator<(TensorCL & X)
 	}
 	else
 	{
-		ERROR_MSG("Incompatible tensors");
+		ERROR_MSG(("LESS: Incompatible tensors, A = " + GetTensorSizeString(GetParam()) + ", B = " + GetTensorSizeString(X.GetParam())).c_str());
 	}
 	return *this;
 }
@@ -507,7 +509,7 @@ TensorCL TensorCL::dot(TensorCL & X)
 	}
 	else
 	{
-		ERROR_MSG("Incompatible tensors");
+		ERROR_MSG(("DOT: Incompatible tensors, A = " + GetTensorSizeString(GetParam()) + ", B = "+ GetTensorSizeString(X.GetParam())).c_str());
 	}
 	return *this;
 }
@@ -518,7 +520,7 @@ void TensorCL::LoadData(float * data_ptr)
 
 float * TensorCL::GetData()
 {
-	host_data = new float[param.length];
+	float* host_data = new float[param.length];
 	clEnqueueReadBuffer(CL->queue(), data, CL_TRUE, 0, sizeof(float)*param.length, host_data, NULL, NULL, NULL);
 	return host_data; 
 }
@@ -563,8 +565,9 @@ void TensorCL::LoadFromFstream(std::ifstream &file)
 void TensorCL::SaveToFstream(std::ofstream &file)
 {
 	file.write((char*)&param, sizeof(cl_tensor));
-
-	file.write((char*)GetData(), param.length * sizeof(float));
+	float* data = GetData();
+	file.write((char*)data, param.length * sizeof(float));
+	delete[] data;
 }
 
 int TensorCL::GetLength()
@@ -739,13 +742,13 @@ void PrintTensor(TensorCL & a)
 		}
 		std::cout << std::endl;
 	}
-	
+	delete[] hd;
 }
 
 TensorCL TensorCL::sum()
 {
 	TensorCL C(GetSumTensor(GetParam())); //create a temporary array
-	sumfun.SetRange(CL->group_size[0], 1, C.GetLength(), 1);
+	sumfun.SetRange(CL->group_size[0]/8, 1, C.GetLength(), 1);
 	sumfun.SetArg(0, C.data); //result
 	sumfun.SetArg(1, data);
 	sumfun.SetArg(2, C.GetParam());
@@ -830,7 +833,7 @@ TensorCL TensorCL::_if(TensorCL & _true, TensorCL & _false)
 	}
 	else
 	{
-		ERROR_MSG("Incompatible tensors");
+		ERROR_MSG("IF: Incompatible tensors");
 	}
 	return *this;
 }
