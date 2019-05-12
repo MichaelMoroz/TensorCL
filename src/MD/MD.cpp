@@ -51,7 +51,7 @@ Tensor MD_CL::GetEnergy(Tensor XYZ, Tensor TYPE)
 	Tensor X = tanh(dot(K[0], dist) + repeat(multirepeat(K[3], atom_num, 2), cluster_num) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)));
 	X = tanh(dot(K[4], sum(transpose(X, 2, 3))) + repeat(repeat(K[5], atom_num), cluster_num));
 
-	return sum(transpose(dot(K[6], X),1,2)) + atom_num* repeat(K[7], cluster_num);
+	return sum(transpose(dot(K[6], X),1,2)) + atom_num*repeat(K[7], cluster_num);
 }
 
 
@@ -92,24 +92,28 @@ void MD_CL::TrainNN(int Iterations, int BatchSize, float min_cost)
 		}
 	}
 
-	float avgcost = 110.f*110.f, test_cost = avgcost;
+	float avgcost = 0, test_cost = avgcost;
 	int epoch = 0;
-	for (int it = 0; it < Iterations && isfinite(avgcost) && avgcost > min_cost; it++)
+	for (int it = 0; it < Iterations && isfinite(avgcost) && (avgcost > min_cost || it < 100); it++)
 	{
 		int batch = rand() % BATCHES_XYZ.size();
-
+		float atom_num = BATCHES_XYZ[batch][1];
 		Tensor E = GetEnergy(BATCHES_XYZ[batch], BATCHES_TYPES[batch]);
 	    Tensor COST = pow(E - BATCHES_ENERGIES[batch],2.f)/ BatchSize;
 		if (batch < BATCHES_XYZ.size()*0.9f)
 		{
 			OPTIM.Optimize_Cost(COST);
-			float cur_cost = sum(COST)();
+			float cur_cost = sum(COST)()/ atom_num;
 			avgcost = (it == 0) ? cur_cost : (avgcost * 0.95 + cur_cost * 0.05);
 			if (it%BATCHES_XYZ.size() == 0) epoch++;
 		}
 		else
 		{
-			test_cost = test_cost*0.95 + 0.05*sum(COST)();
+			test_cost = test_cost*0.5 + 0.5*sum(COST)()/ atom_num;
+			if (avgcost < 0.5*test_cost)
+			{
+				break;
+			}
 		}
 		
 		std::cout <<"Epoch: "<< epoch << " :: " << it << ", Train cost: " << sqrt(avgcost) << ", Test cost: " << sqrt(test_cost) << std::endl;

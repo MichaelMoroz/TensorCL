@@ -14,10 +14,10 @@ int main(int argc, char *argv[]) {
 		MD_CL ZnO(2, 32, 32);
 		//ZnO.LoadNNFromFile("C:/ZnONetworks/24.nn");
 		ZnO.LoadClustersFromFolder("D:/ZnO", 250.f);
-		ZnO.LoadClustersToHostArrays(1);
+		ZnO.LoadClustersToHostArrays(8);
 		ZnO.LoadHostToGPU();
 		ZnO.TrainNN(10000, 32, 1.f); //train untill a precision of 1eV is reached
-		ZnO.SaveNNToFile("C:/ZnONetworks/ver1.nn");
+		ZnO.SaveNNToFile("C:/ZnONetworks/ver4.nn");
 
 
 	/*	Optimizer OPTIM(Optimizer::ADAM);
