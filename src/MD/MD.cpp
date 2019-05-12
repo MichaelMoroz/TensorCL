@@ -48,7 +48,9 @@ Tensor MD_CL::GetEnergy(Tensor XYZ, Tensor TYPE)
 	Tensor dist = xyzpairs - transpose(xyzpairs,1,2) + diagonal; 
 //	PrintTAPE(false);
 //	std::cout << K[0].ID() << std::endl;
-	Tensor X = tanh(dot(K[0], dist) + repeat(multirepeat(K[3], atom_num, 2), cluster_num) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)));
+	Tensor Environment = tanh(dot(K[0], dist) + repeat(multirepeat(K[3], atom_num, 2), cluster_num));
+	Tensor Types = dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2));
+	Tensor X = Environment * Types; // The environment functions modulated by the type
 	X = tanh(dot(K[4], sum(transpose(X, 2, 3))) + repeat(repeat(K[5], atom_num), cluster_num));
 
 	return sum(transpose(dot(K[6], X),1,2)) + atom_num* repeat(K[7], cluster_num);

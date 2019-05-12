@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 	{
 		TensorUseOpenCL(&cl);
 		
-		MD_CL ZnO(2, 32, 32);
+		MD_CL ZnO(2, 128, 32);
 		//ZnO.LoadNNFromFile("C:/ZnONetworks/24.nn");
 		ZnO.LoadClustersFromFolder("D:/ZnO", 250.f);
 		ZnO.LoadClustersToHostArrays(1);
