@@ -15,7 +15,7 @@ public:
 		SIN, COS, TAN, EXP, LOG, TANH, POW,
 		SUM, MIN_M, MAX_M, MIN_N, MAX_N,
 		MORE_M, LESS_M, MORE_N, LESS_N,
-		TRANSPOSE, DOT, REPEAT, GET_INDEX, IF_COND, CUT, EXPAND
+		TRANSPOSE, DOT, REPEAT, GET_INDEX, IF_COND, CUT, EXPAND, RESHAPE
 	};
 
 	Tensor();
@@ -77,7 +77,6 @@ public:
 	Tensor max(float y = 0.f);
 
 	Tensor indicies(int dim);
-	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
 	Tensor transpose(int dim_a = 0, int dim_b = 1);
 	Tensor repeat(int n = 1);
 	Tensor cut(int from, int to);
@@ -88,6 +87,7 @@ public:
 
 	TensorCL& GetTensor();
 
+	cl_tensor GetParam();
 	Size GetSize();
 
 	int ID();
@@ -107,6 +107,9 @@ protected:
 
 void PrintTAPE(bool disp_value);
 int TAPE_SIZE();
+
+Tensor reshape(Tensor X, int x, int y, int z, int w);
+Tensor reshape(Tensor X, cl_tensor x);
 
 //backpropagation class
 class Gradient

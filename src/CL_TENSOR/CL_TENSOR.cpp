@@ -631,6 +631,16 @@ cl_tensor GetSumTensor(cl_tensor x)
 	return x;
 }
 
+cl_tensor UpdateLength(cl_tensor x)
+{
+	x.length = 1;
+	for (int i = 0; i < MAX_DIM; i++)
+	{
+		x.length *= x.size[i];
+	}
+	return x;
+}
+
 cl_tensor Repeat(cl_tensor x, int n)
 {
 	x.rank = getrank(x);
@@ -704,6 +714,20 @@ inline std::ostream& yellow(std::ostream &s)
 	SetConsoleTextAttribute(hStdout,
 		FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
 	return s;
+}
+
+TensorCL reshape(TensorCL & X, int x, int y, int z, int w)
+{
+	TensorCL C = X;
+	C.reshape(x, y, z, w);
+	return C;
+}
+
+TensorCL reshape(TensorCL & X, cl_tensor new_param)
+{
+	TensorCL C = X;
+	C.reshape(new_param);
+	return C;
 }
 
 void PrintTensor(TensorCL & a)
@@ -851,7 +875,33 @@ TensorCL TensorCL::indicies(int dim)
 
 void TensorCL::reshape(int x, int y, int z, int w)
 {
-	
+	cl_tensor newp = GetParam();
+	newp.size[0] = x;
+	newp.size[1] = y;
+	newp.size[2] = z;
+	newp.size[3] = w;
+	newp = UpdateLength(newp);
+	if (newp.length == param.length)
+	{
+		param = newp;
+	}
+	else
+	{
+		ERROR_MSG("RESHAPE: Incorrect parameters");
+	}
+}
+
+void TensorCL::reshape(cl_tensor new_param)
+{
+	new_param = UpdateLength(new_param);
+	if (new_param.length == param.length)
+	{
+		param = new_param;
+	}
+	else
+	{
+		ERROR_MSG("RESHAPE: Incorrect parameters");
+	}
 }
 
 TensorCL TensorCL::transpose(int dim_a, int dim_b)

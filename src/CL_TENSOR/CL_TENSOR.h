@@ -32,6 +32,7 @@ cl_tensor TensorDotResult(cl_tensor x, cl_tensor y);
 int getrank(cl_tensor x);
 cl_tensor Transpose(cl_tensor x, int dim_a, int dim_b);
 cl_tensor GetSumTensor(cl_tensor x);
+cl_tensor UpdateLength(cl_tensor x);
 cl_tensor Repeat(cl_tensor x, int n);
 cl_tensor Cut(cl_tensor x, int a, int b);
 void TensorUseOpenCL(OpenCL* cl);
@@ -132,6 +133,7 @@ public:
 	TensorCL expand(int from, int to);
 
 	void reshape(int x = 1, int y = 1, int z = 1, int w = 1); //TODO
+	void reshape(cl_tensor new_param);
 
 	TensorCL dot(TensorCL &X); //dot product, last dimension of this and second to last dimension of X
 	
@@ -159,6 +161,9 @@ protected:
 	//OpenCL stuff
 	cl_mem data;
 };
+
+TensorCL reshape(TensorCL& X, int x, int y, int z, int w);
+TensorCL reshape(TensorCL& X, cl_tensor new_param);
 
 template<typename T> void PrintTensor(T& a);
 

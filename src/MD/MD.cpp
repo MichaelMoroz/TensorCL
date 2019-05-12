@@ -45,7 +45,7 @@ Tensor MD_CL::GetEnergy(Tensor XYZ, Tensor TYPE)
 	
 	Tensor diagonal = repeat( transpose(repeat(diag(Tensor(atom_num, atom_num), 1e10f), 3), 0, 2) , cluster_num);
 	//inverted distance between atom pairs
-	Tensor dist = pow(xyzpairs - transpose(xyzpairs,1,2) + diagonal, -2.f); 
+	Tensor dist = xyzpairs - transpose(xyzpairs,1,2) + diagonal; 
 //	PrintTAPE(false);
 //	std::cout << K[0].ID() << std::endl;
 	Tensor X = tanh(dot(K[0], dist) + repeat(multirepeat(K[3], atom_num, 2), cluster_num) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)));
@@ -92,7 +92,7 @@ void MD_CL::TrainNN(int Iterations, int BatchSize, float min_cost)
 		}
 	}
 
-	float avgcost = 110.f*110.f;
+	float avgcost = 110.f*110.f, test_cost = avgcost;
 	int epoch = 0;
 	for (int it = 0; it < Iterations && isfinite(avgcost) && avgcost > min_cost; it++)
 	{
@@ -100,11 +100,19 @@ void MD_CL::TrainNN(int Iterations, int BatchSize, float min_cost)
 
 		Tensor E = GetEnergy(BATCHES_XYZ[batch], BATCHES_TYPES[batch]);
 	    Tensor COST = pow(E - BATCHES_ENERGIES[batch],2.f)/ BatchSize;
-
-		OPTIM.Optimize_Cost(COST);
-		float cur_cost = sum(COST)();
-		if (it%BATCHES_XYZ.size()==0) epoch++;
-		std::cout <<"Epoch: "<< epoch << ", Current cost: " << sqrt((avgcost = (it==0)? cur_cost :(avgcost * 0.95 + cur_cost * 0.05))) << ", Current tape size: " << TAPE_SIZE() << std::endl;
+		if (batch < BATCHES_XYZ.size()*0.9f)
+		{
+			OPTIM.Optimize_Cost(COST);
+			float cur_cost = sum(COST)();
+			avgcost = (it == 0) ? cur_cost : (avgcost * 0.95 + cur_cost * 0.05);
+			if (it%BATCHES_XYZ.size() == 0) epoch++;
+		}
+		else
+		{
+			test_cost = test_cost*0.95 + 0.05*sum(COST)();
+		}
+		
+		std::cout <<"Epoch: "<< epoch << " :: " << it << ", Train cost: " << sqrt(avgcost) << ", Test cost: " << sqrt(test_cost) << std::endl;
 	}
 }
 
