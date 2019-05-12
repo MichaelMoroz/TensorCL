@@ -20,6 +20,7 @@ MD_CL::MD_CL(int TypeNum, int N1, int N2) : Types(TypeNum), NN1(N1), NN2(N2)
 
 	//output energy layer
 	K.push_back(Tensor(Size(1, NN2), 100.f / NN2, true)); //6
+	K.push_back(Tensor(Size(1, 1), -605695.f/24.f, false)); //6
 
 	InitOptimizer();
 }
@@ -50,7 +51,7 @@ Tensor MD_CL::GetEnergy(Tensor XYZ, Tensor TYPE)
 	Tensor X = tanh(dot(K[0], dist) + repeat(multirepeat(K[3], atom_num, 2), cluster_num) + dot(K[1], chargepairs) + dot(K[2], transpose(chargepairs, 1, 2)));
 	X = tanh(dot(K[4], sum(transpose(X, 2, 3))) + repeat(repeat(K[5], atom_num), cluster_num));
 
-	return sum(transpose(dot(K[6], X),1,2)) + atom_num*avg_energy;
+	return sum(transpose(dot(K[6], X),1,2)) + atom_num* repeat(K[7], cluster_num);
 }
 
 
@@ -69,7 +70,8 @@ void MD_CL::PrintEnergies()
 	for (int i = 0; i < atom_nums.size(); i++)
 	{
 		Tensor E = GetEnergy(ClustersXYZ[atom_nums[i]], ClustersTypes[atom_nums[i]]);
-		PrintTensor( E - transpose(ClustersEnergies[atom_nums[i]]) );
+		PrintTensor( E );
+		PrintTensor(transpose(ClustersEnergies[atom_nums[i]]));
 	}
 }
 
